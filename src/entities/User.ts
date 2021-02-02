@@ -18,6 +18,10 @@ export class User extends BaseEntity {
   id!: number;
 
   @Field()
+  @Column({ nullable: false })
+  name!: string;
+
+  @Field()
   @Column({ unique: true })
   email!: string;
 

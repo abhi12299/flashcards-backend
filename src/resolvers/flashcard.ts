@@ -1,12 +1,14 @@
 import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection, In } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
+import { Fork } from '../entities/Fork';
 import { Tag } from '../entities/Tag';
 import { User } from '../entities/User';
 import {
   CreateFlashcardInput,
   CreateFlashcardResponse,
   FlashcardResponse,
+  ForkFlashcardResponse,
   GetFlashcardsInput,
   PaginatedFlashcards,
   UpdateFlashcardInput,
@@ -122,6 +124,7 @@ export class FlashcardResolver {
       .getRepository(Flashcard)
       .createQueryBuilder('fc')
       .where('fc."isPublic" = true')
+      .andWhere('fc."isFork" = false')
       .orderBy('fc.createdAt', 'DESC')
       .take(reaLimitPlusOne);
 
@@ -264,6 +267,11 @@ export class FlashcardResolver {
     }
 
     if (typeof isPublic === 'boolean') {
+      if (isPublic && flashcard.isFork) {
+        return {
+          errors: [{ field: 'isPublic', message: 'Forked flashcards cannot be made public.' }],
+        };
+      }
       flashcard.isPublic = isPublic;
     }
     if (title && flashcard.title !== title) {
@@ -315,5 +323,63 @@ export class FlashcardResolver {
   async deleteFlashcard(@Arg('id', () => Int) id: number, @Ctx() { req }: MyContext): Promise<boolean> {
     await Flashcard.delete({ id, creatorId: req.user!.id });
     return true;
+  }
+
+  @Mutation(() => ForkFlashcardResponse)
+  @UseMiddleware(isAuth)
+  async forkFlashcard(
+    @Arg('from', () => Int) fromId: number,
+    @Ctx() { req }: MyContext,
+  ): Promise<ForkFlashcardResponse> {
+    const { id: userId } = req.user!;
+    // check if fromId is public
+    const source = await Flashcard.findOne(fromId, { relations: ['tags'] });
+    if (!source || !source.isPublic) {
+      return {
+        done: false,
+        errors: [{ field: 'from', message: 'That flashcard cannot be forked.' }],
+      };
+    }
+    if (source.creatorId === userId) {
+      return {
+        done: false,
+        errors: [{ field: 'from', message: 'You cannot fork your own flashcard!' }],
+      };
+    }
+    const existingFork = await Fork.findOne({ where: { forkedFrom: fromId, forkedBy: userId } });
+    if (existingFork) {
+      return {
+        done: false,
+        errors: [{ field: 'from', message: 'You have already forked this flashcard.' }],
+      };
+    }
+    return await getConnection().transaction(
+      async (tm): Promise<ForkFlashcardResponse> => {
+        try {
+          const target = new Flashcard();
+          target.body = source.body;
+          target.creatorId = userId;
+          target.title = source.title;
+          target.difficulty = source.difficulty;
+          target.isPublic = false;
+          target.isFork = true;
+          target.tags = source.tags;
+          const savedTarget = await tm.save(target);
+
+          const fork = new Fork();
+          fork.forkedFrom = source.id;
+          fork.forkedTo = savedTarget.id;
+          fork.forkedBy = userId;
+          await tm.save(fork);
+          return { done: true };
+        } catch (error) {
+          console.error(error);
+          return {
+            done: false,
+            errors: [{ field: 'from', message: 'The flashcard cannot be forked. Please try again later.' }],
+          };
+        }
+      },
+    );
   }
 }

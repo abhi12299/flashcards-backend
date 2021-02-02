@@ -161,7 +161,7 @@ export class UserResolver {
   // }
 
   @Mutation(() => UserResponse)
-  async login(@Arg('idToken') idToken: string): Promise<UserResponse> {
+  async login(@Arg('idToken') idToken: string, @Arg('name') name: string): Promise<UserResponse> {
     let email: string | undefined;
     let profilePic: string | undefined;
     try {
@@ -188,7 +188,7 @@ export class UserResolver {
           .createQueryBuilder()
           .insert()
           .into(User)
-          .values({ email, profilePic })
+          .values({ email, profilePic, name })
           .returning('*')
           .execute();
         user = result.raw[0];

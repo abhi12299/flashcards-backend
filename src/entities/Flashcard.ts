@@ -33,6 +33,10 @@ export class Flashcard extends BaseEntity {
   @Column({ nullable: false, default: false })
   isPublic: boolean;
 
+  @Field()
+  @Column({ nullable: false, default: false })
+  isFork: boolean;
+
   @Field(() => FlashcardDifficulty)
   @Column({
     type: 'enum',

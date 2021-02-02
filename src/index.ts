@@ -9,6 +9,7 @@ import { buildSchema } from 'type-graphql';
 import { createConnection } from 'typeorm';
 import { __prod__ } from './constants';
 import { Flashcard } from './entities/Flashcard';
+import { Fork } from './entities/Fork';
 import { Tag } from './entities/Tag';
 import { User } from './entities/User';
 import { jwtMiddleware } from './middleware/jwtMiddleware';
@@ -29,7 +30,7 @@ const main = async () => {
     logging: true,
     synchronize: !__prod__,
     migrations: [path.join(__dirname, './migrations/*')],
-    entities: [Tag, User, Flashcard],
+    entities: [Tag, User, Flashcard, Fork],
   });
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),

@@ -110,3 +110,12 @@ export class GetFlashcardsInput {
   @Field(() => [String], { nullable: true })
   tags?: string[];
 }
+
+@ObjectType()
+export class ForkFlashcardResponse {
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+
+  @Field()
+  done!: boolean;
+}

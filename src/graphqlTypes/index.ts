@@ -2,7 +2,7 @@ import { IsArray, IsString, Length, MinLength } from 'class-validator';
 import { Field, InputType, Int, ObjectType } from 'type-graphql';
 import { Flashcard } from '../entities/Flashcard';
 import { User } from '../entities/User';
-import { FlashcardDifficulty } from '../types';
+import { FlashcardDifficulty, FlashcardStatus } from '../types';
 
 @InputType()
 export class CreateFlashcardInput {
@@ -49,6 +49,30 @@ export class UpdateFlashcardInput {
   isPublic?: boolean;
 }
 
+@InputType()
+export class GetFlashcardsInput {
+  @Field(() => Int)
+  limit!: number;
+
+  @Field({ nullable: true })
+  cursor?: string;
+
+  @Field(() => [String], { nullable: true })
+  tags?: string[];
+}
+
+@InputType()
+export class RespondToFlashcardInput {
+  @Field(() => Int)
+  flashcardId!: number;
+
+  @Field(() => FlashcardStatus)
+  type!: FlashcardStatus;
+
+  @Field({ nullable: true })
+  duration?: number;
+}
+
 @ObjectType()
 export class PaginatedFlashcards {
   @Field(() => [Flashcard])
@@ -91,24 +115,12 @@ export class UserResponse {
 }
 
 @ObjectType()
-export class FlashcardResponse {
+export class UpdateFlashcardResponse {
   @Field(() => [FieldError], { nullable: true })
   errors?: FieldError[];
 
   @Field(() => Flashcard, { nullable: true })
   flashcard?: Flashcard;
-}
-
-@InputType()
-export class GetFlashcardsInput {
-  @Field(() => Int)
-  limit!: number;
-
-  @Field({ nullable: true })
-  cursor?: string;
-
-  @Field(() => [String], { nullable: true })
-  tags?: string[];
 }
 
 @ObjectType()
@@ -118,4 +130,31 @@ export class ForkFlashcardResponse {
 
   @Field()
   done!: boolean;
+}
+
+@ObjectType()
+export class RespondToFlashcardResponse {
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+
+  @Field()
+  done!: boolean;
+}
+
+@ObjectType()
+export class FlashcardStats {
+  @Field()
+  avgTime!: number;
+
+  @Field()
+  numAttempts!: number;
+}
+
+@ObjectType()
+export class FlashcardStatsResponse {
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+
+  @Field(() => FlashcardStats, { nullable: true })
+  stats?: FlashcardStats;
 }

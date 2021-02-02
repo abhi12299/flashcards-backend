@@ -4,11 +4,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Flashcard } from './Flashcard';
+import { Tag } from './Tag';
 
 @ObjectType()
 @Entity()
@@ -31,6 +34,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Flashcard, (card: Flashcard) => card.creator)
   flashcards: Flashcard[];
+
+  @ManyToMany(() => Tag)
+  @JoinTable()
+  tags!: Tag[];
 
   @Field(() => Number)
   @CreateDateColumn()

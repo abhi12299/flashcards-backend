@@ -1,7 +1,12 @@
 import { registerEnumType } from 'type-graphql';
-import { FlashcardDifficulty } from '../types';
+import { FlashcardDifficulty, FlashcardStatus } from '../types';
 
 registerEnumType(FlashcardDifficulty, {
-  name: 'Difficulty', // this one is mandatory
-  description: 'Difficulty of flashcard', // this one is optional
+  name: 'Difficulty',
+  description: 'Difficulty of flashcard',
+});
+
+registerEnumType(FlashcardStatus, {
+  name: 'FlashcardStatus',
+  description: "User's status for a flashcard",
 });

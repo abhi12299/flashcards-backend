@@ -9,12 +9,14 @@ import { buildSchema } from 'type-graphql';
 import { createConnection } from 'typeorm';
 import { __prod__ } from './constants';
 import { Flashcard } from './entities/Flashcard';
+import { FlashcardHistory } from './entities/FlashcardHistory';
 import { Fork } from './entities/Fork';
 import { Tag } from './entities/Tag';
 import { User } from './entities/User';
 import { jwtMiddleware } from './middleware/jwtMiddleware';
 import { FlashcardResolver } from './resolvers/flashcard';
 import { HelloResolver } from './resolvers/hello';
+import { TagResolver } from './resolvers/tag';
 import { UserResolver } from './resolvers/user';
 import { ErrorName, ErrorResponse } from './types';
 import { createTagLoader } from './utils/createTagLoader';
@@ -30,7 +32,7 @@ const main = async () => {
     logging: true,
     synchronize: !__prod__,
     migrations: [path.join(__dirname, './migrations/*')],
-    entities: [Tag, User, Flashcard, Fork],
+    entities: [Tag, User, Flashcard, Fork, FlashcardHistory],
   });
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -53,7 +55,7 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [HelloResolver, UserResolver, FlashcardResolver],
+      resolvers: [HelloResolver, UserResolver, FlashcardResolver, TagResolver],
       validate: false,
     }),
     context: ({ req, res }) => ({

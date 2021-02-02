@@ -1,20 +1,24 @@
 import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection, In } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
+import { FlashcardHistory } from '../entities/FlashcardHistory';
 import { Fork } from '../entities/Fork';
 import { Tag } from '../entities/Tag';
 import { User } from '../entities/User';
 import {
   CreateFlashcardInput,
   CreateFlashcardResponse,
-  FlashcardResponse,
+  FlashcardStatsResponse,
   ForkFlashcardResponse,
   GetFlashcardsInput,
   PaginatedFlashcards,
+  RespondToFlashcardInput,
+  RespondToFlashcardResponse,
   UpdateFlashcardInput,
+  UpdateFlashcardResponse,
 } from '../graphqlTypes';
 import { isAuth } from '../middleware/isAuth';
-import { MyContext } from '../types';
+import { FlashcardStatus, MyContext } from '../types';
 
 @Resolver(Flashcard)
 export class FlashcardResolver {
@@ -220,108 +224,133 @@ export class FlashcardResolver {
     @Ctx() { req }: MyContext,
   ): Promise<CreateFlashcardResponse> {
     const { tags } = input;
-    try {
-      await getConnection()
-        .createQueryBuilder()
-        .insert()
-        .into(Tag)
-        .values(tags.map((t) => ({ name: t })))
-        .onConflict(`("name") DO NOTHING`)
-        .returning('*')
-        .execute();
+    const { id: userId } = req.user!;
+    return await getConnection().transaction(
+      async (tm): Promise<CreateFlashcardResponse> => {
+        try {
+          tm.createQueryBuilder()
+            .insert()
+            .into(Tag)
+            .values(tags.map((t) => ({ name: t })))
+            .onConflict(`("name") DO NOTHING`)
+            .returning('*')
+            .execute();
 
-      const tagObjs = await getConnection()
-        .manager.getRepository(Tag)
-        .find({
-          where: {
-            name: In(tags),
-          },
-        });
+          const tagObjs = await tm.getRepository(Tag).find({
+            where: {
+              name: In(tags),
+            },
+          });
+          const user = await tm.getRepository(User).findOneOrFail(userId, { relations: ['tags'] });
+          user.tags.push(...tagObjs);
+          await tm.save(user);
 
-      const flashcard = await Flashcard.create({
-        ...input,
-        tags: tagObjs,
-        creatorId: req.user!.id,
-      }).save();
-      return { flashcard };
-    } catch (error) {
-      console.error(error);
-      return { errors: [{ field: 'flashcard', message: 'Cannot save flashcard. Please try again later.' }] };
-    }
+          let flashcard = Flashcard.create({
+            ...input,
+            tags: tagObjs,
+            creatorId: userId,
+          });
+
+          flashcard = await tm.save(flashcard);
+          return { flashcard };
+        } catch (error) {
+          console.error(error);
+          return { errors: [{ field: 'flashcard', message: 'Cannot save flashcard. Please try again later.' }] };
+        }
+      },
+    );
   }
 
-  @Mutation(() => FlashcardResponse)
+  @Mutation(() => UpdateFlashcardResponse)
   @UseMiddleware(isAuth)
   async updateFlashcard(
     @Arg('input') { title, body, tags, id, isPublic }: UpdateFlashcardInput,
     @Ctx() { req }: MyContext,
-  ): Promise<FlashcardResponse> {
-    const flashcard = await Flashcard.findOne({
-      where: { id, creatorId: req.user!.id },
-      relations: ['tags'],
-    });
-    if (!flashcard) {
-      return {
-        errors: [{ field: 'id', message: 'Cannot update this flashcard!' }],
-      };
-    }
+  ): Promise<UpdateFlashcardResponse> {
+    const { id: userId } = req.user!;
+    return await getConnection().transaction(
+      async (tm): Promise<UpdateFlashcardResponse> => {
+        try {
+          const flashcard = await tm.getRepository(Flashcard).findOneOrFail({
+            where: { id, creatorId: userId },
+            relations: ['tags'],
+          });
 
-    if (typeof isPublic === 'boolean') {
-      if (isPublic && flashcard.isFork) {
-        return {
-          errors: [{ field: 'isPublic', message: 'Forked flashcards cannot be made public.' }],
-        };
-      }
-      flashcard.isPublic = isPublic;
-    }
-    if (title && flashcard.title !== title) {
-      flashcard.title = title;
-    }
-    if (body && flashcard.body !== body) {
-      flashcard.body = body;
-    }
-    if (tags) {
-      if (tags.length === 0) {
-        return {
-          errors: [{ field: 'tags', message: 'Tags cannot be empty!' }],
-        };
-      }
-      // delete previous tags associated with it
-      // insert new ones
-      await getConnection().query(
-        `
-        delete from flashcard_tags_tag
-        where "flashcardId" = $1;
-      `,
-        [flashcard.id],
-      );
-      await getConnection()
-        .createQueryBuilder()
-        .insert()
-        .into(Tag)
-        .values(tags.map((t) => ({ name: t })))
-        .onConflict(`("name") DO NOTHING`)
-        .returning('*')
-        .execute();
+          if (typeof isPublic === 'boolean') {
+            if (isPublic && flashcard.isFork) {
+              return {
+                errors: [
+                  {
+                    field: 'isPublic',
+                    message: 'Forked flashcards cannot be made public.',
+                  },
+                ],
+              };
+            }
+            flashcard.isPublic = isPublic;
+          }
+          if (title && flashcard.title !== title) {
+            flashcard.title = title;
+          }
+          if (body && flashcard.body !== body) {
+            flashcard.body = body;
+          }
+          if (tags) {
+            if (tags.length === 0) {
+              return {
+                errors: [{ field: 'tags', message: 'Tags cannot be empty!' }],
+              };
+            }
+            // delete previous tags associated with it
+            // insert new ones
+            await tm.query(
+              `
+            delete from flashcard_tags_tag
+            where "flashcardId" = $1;
+          `,
+              [flashcard.id],
+            );
+            await tm
+              .createQueryBuilder()
+              .insert()
+              .into(Tag)
+              .values(tags.map((t) => ({ name: t })))
+              .onConflict(`("name") DO NOTHING`)
+              // .returning('*')
+              .execute();
 
-      const tagObjs = await getConnection()
-        .manager.getRepository(Tag)
-        .find({
-          where: {
-            name: In(tags),
-          },
-        });
-      flashcard.tags = tagObjs;
-    }
-    await flashcard.save();
+            const tagObjs = await tm.getRepository(Tag).find({
+              where: {
+                name: In(tags),
+              },
+            });
+            const user = await tm.getRepository(User).findOneOrFail(userId, { relations: ['tags'] });
+            user.tags.push(...tagObjs);
+            await tm.save(user);
+            flashcard.tags = tagObjs;
+          }
+          await tm.save(flashcard);
 
-    return { flashcard };
+          return { flashcard };
+        } catch (error) {
+          console.error(error);
+          return {
+            errors: [
+              {
+                field: '',
+                message: 'Cannot update the flashcard. Please try again later.',
+              },
+            ],
+          };
+        }
+      },
+    );
   }
 
   @Mutation(() => Boolean)
   @UseMiddleware(isAuth)
   async deleteFlashcard(@Arg('id', () => Int) id: number, @Ctx() { req }: MyContext): Promise<boolean> {
-    await Flashcard.delete({ id, creatorId: req.user!.id });
+    await getConnection().getRepository(Flashcard).softDelete({ id, creatorId: req.user!.id });
     return true;
   }
 
@@ -370,7 +399,9 @@ export class FlashcardResolver {
           fork.forkedFrom = source.id;
           fork.forkedTo = savedTarget.id;
           fork.forkedBy = userId;
-          await tm.save(fork);
+          const user = await tm.getRepository(User).findOneOrFail(userId, { relations: ['tags'] });
+          user.tags.push(...source.tags);
+          await Promise.all([tm.save(user), tm.save(fork)]);
           return { done: true };
         } catch (error) {
           console.error(error);
@@ -381,5 +412,67 @@ export class FlashcardResolver {
         }
       },
     );
+  }
+
+  @Mutation(() => RespondToFlashcardResponse)
+  @UseMiddleware(isAuth)
+  async respondToFlashcard(
+    @Arg('input') { flashcardId, type, duration }: RespondToFlashcardInput,
+    @Ctx() { req }: MyContext,
+  ): Promise<RespondToFlashcardResponse> {
+    const { id: userId } = req.user!;
+
+    const flashcard = await Flashcard.findOne(flashcardId);
+    if (!flashcard || (flashcard.creatorId !== userId && !flashcard.isPublic)) {
+      return {
+        done: false,
+        errors: [{ field: 'flashcardId', message: 'This flashcard is no longer available.' }],
+      };
+    }
+    const fcHistory = new FlashcardHistory();
+    fcHistory.flashcardId = flashcardId;
+    fcHistory.status = type;
+    fcHistory.userId = userId;
+    if ([FlashcardStatus.knowAnswer, FlashcardStatus.dontKnowAnswer].includes(type)) {
+      if (!duration) duration = 0;
+      fcHistory.responseDuration = duration;
+    }
+    try {
+      await fcHistory.save();
+
+      return { done: true };
+    } catch (error) {
+      console.error(error);
+      return { done: false };
+    }
+  }
+
+  @Query(() => FlashcardStatsResponse)
+  @UseMiddleware(isAuth)
+  async flashcardStats(
+    @Arg('flashcardId') flashcardId: number,
+    @Ctx() { req }: MyContext,
+  ): Promise<FlashcardStatsResponse> {
+    const { id: userId } = req.user!;
+    const stats = await getConnection().query(
+      `
+    select ROUND(avg(fh."responseDuration")::numeric, 2) as "avgTime", count(*) as "numAttempts"
+    from flashcard_history fh
+    where fh."flashcardId" = $1 and fh."userId" = $2
+    group by fh."flashcardId";
+    `,
+      [flashcardId, userId],
+    );
+    if (!Array.isArray(stats) || stats.length === 0) {
+      return {
+        errors: [
+          {
+            field: 'flashcardId',
+            message: 'No stats available for this flashcard.',
+          },
+        ],
+      };
+    }
+    return { stats: stats[0] };
   }
 }

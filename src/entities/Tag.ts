@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Flashcard } from './Flashcard';
+import { User } from './User';
 
 @ObjectType()
 @Entity()
@@ -22,7 +23,10 @@ export class Tag extends BaseEntity {
   name!: string;
 
   @ManyToMany(() => Flashcard, (fc: Flashcard) => fc.tags)
-  questions: Flashcard[];
+  flashcards: Flashcard[];
+
+  @ManyToMany(() => User, (user) => user.tags)
+  users: User[];
 
   @Field(() => Number)
   @CreateDateColumn()

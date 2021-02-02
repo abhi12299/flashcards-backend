@@ -31,6 +31,12 @@ export enum FlashcardDifficulty {
   hard = 'hard',
 }
 
+export enum FlashcardStatus {
+  unattempted = 'unattempted',
+  knowAnswer = 'knowAnswer',
+  dontKnowAnswer = 'dontKnowAnswer',
+}
+
 export class CustomError extends Error {
   errorName: ErrorName;
 

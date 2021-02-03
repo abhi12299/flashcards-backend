@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Redis } from 'ioredis';
+import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createTagLoader } from './utils/createTagLoader';
 import { createUserLoader } from './utils/createUserLoader';
 
@@ -9,6 +10,7 @@ export type MyContext = {
   res: Response;
   userLoader: ReturnType<typeof createUserLoader>;
   tagLoader: ReturnType<typeof createTagLoader>;
+  flashcardLoader: ReturnType<typeof createFlashcardLoader>;
 };
 
 export type UserAuthTokenPayload = {
@@ -35,6 +37,12 @@ export enum FlashcardStatus {
   unattempted = 'unattempted',
   knowAnswer = 'knowAnswer',
   dontKnowAnswer = 'dontKnowAnswer',
+}
+
+export enum FlashcardVisibility {
+  public = 'public',
+  private = 'private',
+  deleted = 'deleted',
 }
 
 export class CustomError extends Error {

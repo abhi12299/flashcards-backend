@@ -18,14 +18,20 @@ import {
   UpdateFlashcardResponse,
 } from '../graphqlTypes';
 import { isAuth } from '../middleware/isAuth';
-import { FlashcardStatus, MyContext } from '../types';
+import { FlashcardStatus, FlashcardVisibility, MyContext } from '../types';
 
 @Resolver(Flashcard)
 export class FlashcardResolver {
-  // @FieldResolver(() => String)
-  // textSnippet(@Root() post: Flashcard) {
-  //   return post.text.slice(0, 50);
-  // }
+  @FieldResolver(() => FlashcardVisibility)
+  status(@Root() flashcard: Flashcard): FlashcardVisibility {
+    if (!flashcard.isPublic) {
+      return FlashcardVisibility.private;
+    }
+    if (flashcard.deletedAt) {
+      return FlashcardVisibility.deleted;
+    }
+    return FlashcardVisibility.public;
+  }
 
   @FieldResolver(() => User)
   creator(@Root() flashcard: Flashcard, @Ctx() { userLoader }: MyContext) {
@@ -38,6 +44,28 @@ export class FlashcardResolver {
       return flashcard.tags;
     }
     return tagLoader.load(flashcard.id);
+  }
+
+  @FieldResolver(() => String)
+  title(@Root() flashcard: Flashcard, @Ctx() { req }: MyContext): string {
+    if (flashcard.deletedAt) {
+      return '';
+    }
+    if (flashcard.creatorId === req.user?.id || flashcard.isPublic) {
+      return flashcard.title;
+    }
+    return '';
+  }
+
+  @FieldResolver(() => String)
+  body(@Root() flashcard: Flashcard, @Ctx() { req }: MyContext): string {
+    if (flashcard.deletedAt) {
+      return '';
+    }
+    if (flashcard.creatorId === req.user?.id || flashcard.isPublic) {
+      return flashcard.body;
+    }
+    return '';
   }
 
   // @FieldResolver(() => Int, { nullable: true })
@@ -417,20 +445,20 @@ export class FlashcardResolver {
   @Mutation(() => RespondToFlashcardResponse)
   @UseMiddleware(isAuth)
   async respondToFlashcard(
-    @Arg('input') { flashcardId, type, duration }: RespondToFlashcardInput,
+    @Arg('input') { id, type, duration }: RespondToFlashcardInput,
     @Ctx() { req }: MyContext,
   ): Promise<RespondToFlashcardResponse> {
     const { id: userId } = req.user!;
 
-    const flashcard = await Flashcard.findOne(flashcardId);
+    const flashcard = await Flashcard.findOne(id);
     if (!flashcard || (flashcard.creatorId !== userId && !flashcard.isPublic)) {
       return {
         done: false,
-        errors: [{ field: 'flashcardId', message: 'This flashcard is no longer available.' }],
+        errors: [{ field: 'id', message: 'This flashcard is no longer available.' }],
       };
     }
     const fcHistory = new FlashcardHistory();
-    fcHistory.flashcardId = flashcardId;
+    fcHistory.flashcardId = id;
     fcHistory.status = type;
     fcHistory.userId = userId;
     if ([FlashcardStatus.knowAnswer, FlashcardStatus.dontKnowAnswer].includes(type)) {
@@ -438,8 +466,7 @@ export class FlashcardResolver {
       fcHistory.responseDuration = duration;
     }
     try {
-      await fcHistory.save();
-
+      await getConnection().getRepository(FlashcardHistory).insert(fcHistory);
       return { done: true };
     } catch (error) {
       console.error(error);

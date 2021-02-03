@@ -15,10 +15,12 @@ import { Tag } from './entities/Tag';
 import { User } from './entities/User';
 import { jwtMiddleware } from './middleware/jwtMiddleware';
 import { FlashcardResolver } from './resolvers/flashcard';
+import { FlashcardHistoryResolver } from './resolvers/flashcardHistory';
 import { HelloResolver } from './resolvers/hello';
 import { TagResolver } from './resolvers/tag';
 import { UserResolver } from './resolvers/user';
 import { ErrorName, ErrorResponse } from './types';
+import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createTagLoader } from './utils/createTagLoader';
 import { createUserLoader } from './utils/createUserLoader';
 import { getErrorCode } from './utils/getErrorCode';
@@ -55,7 +57,7 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [HelloResolver, UserResolver, FlashcardResolver, TagResolver],
+      resolvers: [HelloResolver, UserResolver, FlashcardResolver, TagResolver, FlashcardHistoryResolver],
       validate: false,
     }),
     context: ({ req, res }) => ({
@@ -64,6 +66,7 @@ const main = async () => {
       // redis,
       userLoader: createUserLoader(),
       tagLoader: createTagLoader(),
+      flashcardLoader: createFlashcardLoader(),
     }),
     formatError: (err: GraphQLError): ErrorResponse => {
       console.error('Apollo server error:', JSON.stringify(err, null, 2));

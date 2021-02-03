@@ -6,12 +6,11 @@ import { FlashcardStats } from '../graphqlTypes';
 // [{avgTime: 1, numAttempts: 1, lastSeenOn: '1657888763' }, ...]
 export const createFlashcardStatsLoader = () =>
   new DataLoader<string, FlashcardStats | undefined>(async (keys) => {
-    console.log(keys);
     let whereClause = `where `;
     const flatKeys = keys.map((s) => s.split('|').map((v) => parseInt(v))).flat();
     // flatKeys = [1, 1, 2, 1, ...]
     for (let i = 0; i < flatKeys.length - 1; i += 2) {
-      whereClause += `(fh."flashcardId" = $${i + 1} and fh."userId" = $${i + 2}) or `;
+      whereClause += `(fh."userId" = $${i + 1} and fh."flashcardId" = $${i + 2}) or `;
     }
     whereClause = whereClause.slice(0, -4);
 

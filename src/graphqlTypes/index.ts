@@ -1,5 +1,5 @@
 import { IsArray, IsString, Length, MinLength } from 'class-validator';
-import { Field, InputType, Int, ObjectType } from 'type-graphql';
+import { Field, Float, InputType, Int, ObjectType } from 'type-graphql';
 import { Flashcard } from '../entities/Flashcard';
 import { FlashcardHistory } from '../entities/FlashcardHistory';
 import { User } from '../entities/User';
@@ -168,6 +168,9 @@ export class FlashcardStats {
 
   @Field()
   numAttempts!: number;
+
+  @Field(() => Float)
+  lastSeenOn!: number;
 }
 
 @ObjectType()

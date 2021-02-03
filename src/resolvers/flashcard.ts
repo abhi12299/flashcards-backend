@@ -8,7 +8,7 @@ import { User } from '../entities/User';
 import {
   CreateFlashcardInput,
   CreateFlashcardResponse,
-  FlashcardStatsResponse,
+  FlashcardStats,
   ForkFlashcardResponse,
   GetFlashcardsInput,
   PaginatedFlashcards,
@@ -66,6 +66,15 @@ export class FlashcardResolver {
       return flashcard.body;
     }
     return '';
+  }
+
+  @FieldResolver(() => FlashcardStats, { nullable: true })
+  @UseMiddleware(isAuth)
+  async stats(
+    @Root() flashcard: Flashcard,
+    @Ctx() { req, flashcardStatsLoader }: MyContext,
+  ): Promise<FlashcardStats | undefined> {
+    return flashcardStatsLoader.load(`${req.user!.id}|${flashcard.id}`);
   }
 
   @Query(() => PaginatedFlashcards)
@@ -399,31 +408,5 @@ export class FlashcardResolver {
       console.error(error);
       return { done: false };
     }
-  }
-
-  @Query(() => FlashcardStatsResponse)
-  @UseMiddleware(isAuth)
-  async flashcardStats(@Arg('id') id: number, @Ctx() { req }: MyContext): Promise<FlashcardStatsResponse> {
-    const { id: userId } = req.user!;
-    const stats = await getConnection().query(
-      `
-    select ROUND(avg(fh."responseDuration")::numeric, 2) as "avgTime", count(*) as "numAttempts"
-    from flashcard_history fh
-    where fh."flashcardId" = $1 and fh."userId" = $2
-    group by fh."flashcardId";
-    `,
-      [id, userId],
-    );
-    if (!Array.isArray(stats) || stats.length === 0) {
-      return {
-        errors: [
-          {
-            field: 'flashcardId',
-            message: 'No stats available for this flashcard.',
-          },
-        ],
-      };
-    }
-    return { stats: stats[0] };
   }
 }

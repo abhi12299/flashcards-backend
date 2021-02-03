@@ -21,6 +21,7 @@ import { TagResolver } from './resolvers/tag';
 import { UserResolver } from './resolvers/user';
 import { ErrorName, ErrorResponse } from './types';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
+import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
 import { createTagLoader } from './utils/createTagLoader';
 import { createUserLoader } from './utils/createUserLoader';
 import { getErrorCode } from './utils/getErrorCode';
@@ -67,6 +68,7 @@ const main = async () => {
       userLoader: createUserLoader(),
       tagLoader: createTagLoader(),
       flashcardLoader: createFlashcardLoader(),
+      flashcardStatsLoader: createFlashcardStatsLoader(),
     }),
     formatError: (err: GraphQLError): ErrorResponse => {
       console.error('Apollo server error:', JSON.stringify(err, null, 2));

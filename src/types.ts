@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Redis } from 'ioredis';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
+import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
 import { createTagLoader } from './utils/createTagLoader';
 import { createUserLoader } from './utils/createUserLoader';
 
@@ -11,6 +12,7 @@ export type MyContext = {
   userLoader: ReturnType<typeof createUserLoader>;
   tagLoader: ReturnType<typeof createTagLoader>;
   flashcardLoader: ReturnType<typeof createFlashcardLoader>;
+  flashcardStatsLoader: ReturnType<typeof createFlashcardStatsLoader>;
 };
 
 export type UserAuthTokenPayload = {

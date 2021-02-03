@@ -68,79 +68,6 @@ export class FlashcardResolver {
     return '';
   }
 
-  // @FieldResolver(() => Int, { nullable: true })
-  // async voteStatus(@Root() post: Flashcard, @Ctx() { updootLoader, req }: MyContext) {
-  //   if (!req.session.userId) {
-  //     return null;
-  //   }
-
-  //   const updoot = await updootLoader.load({
-  //     postId: post.id,
-  //     userId: req.session.userId,
-  //   });
-
-  //   return updoot ? updoot.value : null;
-  // }
-
-  // @Mutation(() => Boolean)
-  // @UseMiddleware(isAuth)
-  // async vote(
-  //   @Arg('postId', () => Int) postId: number,
-  //   @Arg('value', () => Int) value: number,
-  //   @Ctx() { req }: MyContext,
-  // ) {
-  //   const isUpdoot = value !== -1;
-  //   const realValue = isUpdoot ? 1 : -1;
-  //   const { userId } = req.session;
-
-  //   const updoot = await Updoot.findOne({ where: { postId, userId } });
-
-  //   // the user has voted on the post before
-  //   // and they are changing their vote
-  //   if (updoot && updoot.value !== realValue) {
-  //     await getConnection().transaction(async (tm) => {
-  //       await tm.query(
-  //         `
-  //   update updoot
-  //   set value = $1
-  //   where "postId" = $2 and "userId" = $3
-  //       `,
-  //         [realValue, postId, userId],
-  //       );
-
-  //       await tm.query(
-  //         `
-  //         update post
-  //         set points = points + $1
-  //         where id = $2
-  //       `,
-  //         [2 * realValue, postId],
-  //       );
-  //     });
-  //   } else if (!updoot) {
-  //     // has never voted before
-  //     await getConnection().transaction(async (tm) => {
-  //       await tm.query(
-  //         `
-  //   insert into updoot ("userId", "postId", value)
-  //   values ($1, $2, $3)
-  //       `,
-  //         [userId, postId, realValue],
-  //       );
-
-  //       await tm.query(
-  //         `
-  //   update post
-  //   set points = points + $1
-  //   where id = $2
-  //     `,
-  //         [realValue, postId],
-  //       );
-  //     });
-  //   }
-  //   return true;
-  // }
-
   @Query(() => PaginatedFlashcards)
   async publicFlashcards(@Arg('input') { limit, cursor, tags }: GetFlashcardsInput): Promise<PaginatedFlashcards> {
     const realLimit = Math.min(50, limit);
@@ -232,14 +159,14 @@ export class FlashcardResolver {
   }
 
   @Query(() => Flashcard, { nullable: true })
-  // @UseMiddleware(isAuth)
+  @UseMiddleware(isAuth)
   async flashcard(@Arg('id', () => Int) id: number, @Ctx() { req }: MyContext): Promise<Flashcard | undefined> {
     const flashcard = await Flashcard.findOne({ where: { id }, relations: ['tags'] });
     if (!flashcard || flashcard.isPublic) {
       return flashcard;
     }
 
-    if (!req.user?.id || flashcard.creatorId !== req.user?.id) {
+    if (flashcard.deletedAt || flashcard.creatorId !== req.user?.id) {
       return;
     }
     return flashcard;
@@ -476,10 +403,7 @@ export class FlashcardResolver {
 
   @Query(() => FlashcardStatsResponse)
   @UseMiddleware(isAuth)
-  async flashcardStats(
-    @Arg('flashcardId') flashcardId: number,
-    @Ctx() { req }: MyContext,
-  ): Promise<FlashcardStatsResponse> {
+  async flashcardStats(@Arg('id') id: number, @Ctx() { req }: MyContext): Promise<FlashcardStatsResponse> {
     const { id: userId } = req.user!;
     const stats = await getConnection().query(
       `
@@ -488,7 +412,7 @@ export class FlashcardResolver {
     where fh."flashcardId" = $1 and fh."userId" = $2
     group by fh."flashcardId";
     `,
-      [flashcardId, userId],
+      [id, userId],
     );
     if (!Array.isArray(stats) || stats.length === 0) {
       return {

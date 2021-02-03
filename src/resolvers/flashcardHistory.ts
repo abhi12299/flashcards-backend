@@ -8,11 +8,6 @@ import { MyContext } from '../types';
 
 @Resolver(FlashcardHistory)
 export class FlashcardHistoryResolver {
-  // @FieldResolver(() => String)
-  // textSnippet(@Root() post: Flashcard) {
-  //   return post.text.slice(0, 50);
-  // }
-
   @FieldResolver(() => Flashcard)
   flashcard(@Root() fcHistory: FlashcardHistory, @Ctx() { flashcardLoader }: MyContext) {
     return flashcardLoader.load(fcHistory.flashcardId);

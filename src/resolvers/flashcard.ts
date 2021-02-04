@@ -92,9 +92,7 @@ export class FlashcardResolver {
       .getRepository(Flashcard)
       .createQueryBuilder('fc')
       .where('fc."isPublic" = true')
-      .andWhere('fc."isFork" = false')
-      .orderBy('fc.createdAt', 'DESC')
-      .take(reaLimitPlusOne);
+      .andWhere('fc."isFork" = false');
 
     if (cursor) {
       qb.andWhere('fc."createdAt" < :cursor', {
@@ -106,11 +104,13 @@ export class FlashcardResolver {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }
-    const flashcards = await qb.getMany();
+    const count = await qb.clone().select('count(*) as "totalCount"').execute();
+    const flashcards = await qb.orderBy('fc.createdAt', 'DESC').take(reaLimitPlusOne).getMany();
 
     return {
       flashcards: flashcards.slice(0, realLimit),
       hasMore: flashcards.length === reaLimitPlusOne,
+      total: count[0]?.totalCount,
     };
   }
 
@@ -122,32 +122,15 @@ export class FlashcardResolver {
   ): Promise<PaginatedFlashcards> {
     const { id } = req.user!;
     const realLimit = Math.min(50, limit);
-    const reaLimitPlusOne = realLimit + 1;
+    const realLimitPlusOne = realLimit + 1;
 
-    const replacements: unknown[] = [id, reaLimitPlusOne];
+    const replacements: unknown[] = [id, realLimitPlusOne];
 
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)));
     }
 
-    // const flashcards = await getConnection().query(
-    //   `
-    // select fc.*
-    // from flashcard fc
-    // where fc."creatorId" = $1
-    // ${cursor ? `and fc."createdAt" < $3` : ''}
-    // order by fc."createdAt" DESC
-    // limit $2;
-    // `,
-    //   replacements,
-    // );
-
-    const qb = getConnection()
-      .getRepository(Flashcard)
-      .createQueryBuilder('fc')
-      .where('fc."creatorId" = :id', { id })
-      .orderBy('fc.createdAt', 'DESC')
-      .take(reaLimitPlusOne);
+    const qb = getConnection().getRepository(Flashcard).createQueryBuilder('fc').where('fc."creatorId" = :id', { id });
 
     if (cursor) {
       qb.andWhere('fc."createdAt" < :cursor', {
@@ -159,11 +142,12 @@ export class FlashcardResolver {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }
-    const flashcards = await qb.getMany();
-
+    const count = await qb.clone().select('count(*) as "totalCount"').execute();
+    const flashcards = await qb.orderBy('fc.createdAt', 'DESC').take(realLimitPlusOne).getMany();
     return {
       flashcards: flashcards.slice(0, realLimit),
-      hasMore: flashcards.length === reaLimitPlusOne,
+      hasMore: flashcards.length === realLimitPlusOne,
+      total: count[0]?.totalCount,
     };
   }
 

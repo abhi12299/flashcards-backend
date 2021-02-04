@@ -1,4 +1,4 @@
-import { IsArray, IsString, Length, MinLength } from 'class-validator';
+import { IsArray, IsString, Length, Min, MinLength } from 'class-validator';
 import { Field, Float, InputType, Int, ObjectType } from 'type-graphql';
 import { Flashcard } from '../entities/Flashcard';
 import { FlashcardHistory } from '../entities/FlashcardHistory';
@@ -53,6 +53,7 @@ export class UpdateFlashcardInput {
 @InputType()
 export class GetFlashcardsInput {
   @Field(() => Int)
+  @Min(1)
   limit!: number;
 
   @Field({ nullable: true })
@@ -60,11 +61,15 @@ export class GetFlashcardsInput {
 
   @Field(() => [String], { nullable: true })
   tags?: string[];
+
+  @Field(() => FlashcardDifficulty, { nullable: true })
+  difficulty?: FlashcardDifficulty;
 }
 
 @InputType()
 export class GetFlashcardsHistoryInput {
   @Field(() => Int)
+  @Min(1)
   limit!: number;
 
   @Field({ nullable: true })
@@ -90,6 +95,9 @@ export class PaginatedFlashcards {
 
   @Field()
   hasMore: boolean;
+
+  @Field(() => Int)
+  total: number;
 }
 
 @ObjectType()

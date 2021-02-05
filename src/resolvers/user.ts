@@ -1,9 +1,10 @@
 import admin from 'firebase-admin';
 import jwt from 'jsonwebtoken';
-import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root } from 'type-graphql';
+import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection } from 'typeorm';
 import { User } from '../entities/User';
-import { UserResponse } from '../graphqlTypes';
+import { UpdateUserProfileInput, UserResponse } from '../graphqlTypes';
+import { isAuth } from '../middleware/isAuth';
 import { MyContext } from '../types';
 
 @Resolver(User)
@@ -74,5 +75,22 @@ export class UserResolver {
       isNewUser,
       accessToken,
     };
+  }
+
+  @Mutation(() => User, { nullable: true })
+  @UseMiddleware(isAuth)
+  async updateUser(@Arg('input') { name }: UpdateUserProfileInput, @Ctx() { req }: MyContext): Promise<User | null> {
+    const { id: userId } = req.user!;
+    try {
+      const user = await User.findOneOrFail(userId);
+      if (name && user.name !== name) {
+        user.name = name;
+      }
+      await user.save();
+      return user;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
   }
 }

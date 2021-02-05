@@ -88,6 +88,13 @@ export class RespondToFlashcardInput {
   duration?: number;
 }
 
+@InputType()
+export class UpdateUserProfileInput {
+  @Field({ nullable: true })
+  @Length(2)
+  name?: string;
+}
+
 @ObjectType()
 export class PaginatedFlashcards {
   @Field(() => [Flashcard])

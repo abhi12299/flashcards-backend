@@ -1,7 +1,6 @@
 import { ApolloServer } from 'apollo-server-express';
 import 'dotenv-safe/config';
 import express from 'express';
-import admin from 'firebase-admin';
 import { GraphQLError } from 'graphql';
 import path from 'path';
 import 'reflect-metadata';
@@ -37,9 +36,9 @@ const main = async () => {
     migrations: [path.join(__dirname, './migrations/*')],
     entities: [Tag, User, Flashcard, Fork, FlashcardHistory],
   });
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-  });
+  // admin.initializeApp({
+  //   credential: admin.credential.applicationDefault(),
+  // });
   // await conn.runMigrations();
 
   const app = express();

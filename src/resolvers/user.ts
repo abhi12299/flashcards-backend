@@ -1,4 +1,3 @@
-import admin from 'firebase-admin';
 import jwt from 'jsonwebtoken';
 import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection } from 'typeorm';
@@ -6,6 +5,7 @@ import { User } from '../entities/User';
 import { UpdateUserProfileInput, UserResponse } from '../graphqlTypes';
 import { isAuth } from '../middleware/isAuth';
 import { MyContext } from '../types';
+import { verifyIdToken } from '../utils/verifyIdToken';
 
 @Resolver(User)
 export class UserResolver {
@@ -31,7 +31,10 @@ export class UserResolver {
     let email: string | undefined;
     let profilePic: string | undefined;
     try {
-      const decoded = await admin.auth().verifyIdToken(idToken);
+      const decoded = await verifyIdToken(idToken);
+      if (!decoded) {
+        throw new Error('invalid id token');
+      }
       email = decoded.email;
       profilePic = decoded.picture;
     } catch (error) {

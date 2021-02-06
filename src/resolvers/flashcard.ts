@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection, In } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
@@ -203,6 +204,7 @@ export class FlashcardResolver {
           return { flashcard };
         } catch (error) {
           console.error(error);
+          Sentry.captureException(error);
           return { errors: [{ field: 'flashcard', message: 'Cannot save flashcard. Please try again later.' }] };
         }
       },
@@ -281,6 +283,7 @@ export class FlashcardResolver {
 
           return { flashcard };
         } catch (error) {
+          Sentry.captureException(error);
           console.error(error);
           return {
             errors: [
@@ -352,6 +355,7 @@ export class FlashcardResolver {
           await Promise.all([tm.save(user), tm.save(fork)]);
           return { done: true };
         } catch (error) {
+          Sentry.captureException(error);
           console.error(error);
           return {
             done: false,
@@ -389,6 +393,7 @@ export class FlashcardResolver {
       await getConnection().getRepository(FlashcardHistory).insert(fcHistory);
       return { done: true };
     } catch (error) {
+      Sentry.captureException(error);
       console.error(error);
       return { done: false };
     }

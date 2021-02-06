@@ -6,5 +6,6 @@ declare namespace NodeJS {
     JWT_SECRET: string;
     GOOGLE_APPLICATION_CREDENTIALS: string;
     CLIENT_ID: string;
+    SENTRY_DSN: string;
   }
 }

@@ -1,4 +1,7 @@
-import { ApolloServer } from 'apollo-server-express';
+import * as Sentry from '@sentry/node';
+import * as Tracing from '@sentry/tracing';
+import { PluginDefinition } from 'apollo-server-core';
+import { ApolloError, ApolloServer } from 'apollo-server-express';
 import 'dotenv-safe/config';
 import express from 'express';
 import { GraphQLError } from 'graphql';
@@ -18,7 +21,7 @@ import { FlashcardHistoryResolver } from './resolvers/flashcardHistory';
 import { HelloResolver } from './resolvers/hello';
 import { TagResolver } from './resolvers/tag';
 import { UserResolver } from './resolvers/user';
-import { ErrorName, ErrorResponse } from './types';
+import { CustomError, ErrorName, ErrorResponse } from './types';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
 import { createTagLoader } from './utils/createTagLoader';
@@ -42,18 +45,73 @@ const main = async () => {
   // await conn.runMigrations();
 
   const app = express();
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [
+      new Sentry.Integrations.Http({ tracing: true }),
+      new Tracing.Integrations.Express({ app }),
+      new Tracing.Integrations.Postgres(),
+    ],
+    tracesSampleRate: 0.2,
+  });
+  app.use(Sentry.Handlers.requestHandler());
 
   app.use(jwtMiddleware);
   app.get('/', (_, res) => res.redirect('/graphql'));
 
   // const redis = new Redis(process.env.REDIS_URL);
   app.set('trust proxy', 1);
-  // app.use(
-  //   cors({
-  //     origin: process.env.CORS_ORIGIN,
-  //     credentials: true,
-  //   }),
-  // );
+
+  const serverPlugins: PluginDefinition[] = [];
+  serverPlugins.push({
+    requestDidStart(_) {
+      /* Within this returned object, define functions that respond
+     to request-specific lifecycle events. */
+      return {
+        didEncounterErrors(ctx) {
+          // If we couldn't parse the operation, don't
+          // do anything here
+          if (!ctx.operation) {
+            return;
+          }
+
+          for (const err of ctx.errors) {
+            // Only report internal server errors,
+            // all errors extending ApolloError should be user-facing
+            if (err instanceof ApolloError || CustomError.isIgnoreable(err)) {
+              continue;
+            }
+
+            // Add scoped report details and send to Sentry
+            Sentry.withScope((scope) => {
+              // Annotate whether failing operation was query/mutation/subscription
+              scope.setTag('kind', ctx.operation?.operation || '');
+
+              // Log query and variables as extras (make sure to strip out sensitive data!)
+              scope.setExtra('query', ctx.request.query);
+              scope.setExtra('variables', ctx.request.variables);
+
+              if (err.path) {
+                // We can also add the path as breadcrumb
+                scope.addBreadcrumb({
+                  category: 'query-path',
+                  message: err.path.join(' > '),
+                  level: Sentry.Severity.Debug,
+                });
+              }
+
+              const transactionId = ctx.request.http?.headers.get('x-transaction-id');
+              if (transactionId) {
+                scope.setTransactionName(transactionId);
+              }
+
+              Sentry.captureException(err);
+            });
+          }
+        },
+      };
+    },
+  });
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
@@ -79,12 +137,15 @@ const main = async () => {
       }
       return error;
     },
+    plugins: serverPlugins,
   });
 
   apolloServer.applyMiddleware({
     app,
     cors: false,
   });
+
+  app.use(Sentry.Handlers.errorHandler());
 
   app.listen(+process.env.PORT, () => {
     console.log('server started on localhost:4000');

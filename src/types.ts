@@ -25,8 +25,8 @@ export type ErrorResponse = {
 };
 
 export enum ErrorName {
-  UNAUTHORIZED,
-  INTERNAL_SERVER_ERROR,
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
 }
 
 export enum FlashcardDifficulty {
@@ -48,10 +48,16 @@ export enum FlashcardVisibility {
 }
 
 export class CustomError extends Error {
+  static ignoredErrors: ErrorName[] = [ErrorName.UNAUTHORIZED];
+
   errorName: ErrorName;
 
   constructor(name: ErrorName) {
-    super('');
+    super(name);
     this.errorName = name;
+  }
+
+  static isIgnoreable(err: Error): boolean {
+    return this.ignoredErrors.includes(err.message as ErrorName);
   }
 }

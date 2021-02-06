@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import jwt from 'jsonwebtoken';
 import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection } from 'typeorm';
@@ -38,6 +39,7 @@ export class UserResolver {
       email = decoded.email;
       profilePic = decoded.picture;
     } catch (error) {
+      Sentry.captureException(error);
       console.error(error);
     }
     if (!email) {
@@ -63,6 +65,7 @@ export class UserResolver {
         user = result.raw[0];
       }
     } catch (error) {
+      Sentry.captureException(error);
       console.error(error);
     }
 
@@ -92,6 +95,7 @@ export class UserResolver {
       await user.save();
       return user;
     } catch (error) {
+      Sentry.captureException(error);
       console.error(error);
       return null;
     }

@@ -24,6 +24,7 @@ import { UserResolver } from './resolvers/user';
 import { CustomError, ErrorName, ErrorResponse } from './types';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
+import { createLogger } from './utils/createLogger';
 import { createTagLoader } from './utils/createTagLoader';
 import { createUserLoader } from './utils/createUserLoader';
 import { getErrorCode } from './utils/getErrorCode';
@@ -112,6 +113,7 @@ const main = async () => {
       };
     },
   });
+  const logger = createLogger();
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
@@ -126,9 +128,10 @@ const main = async () => {
       tagLoader: createTagLoader(),
       flashcardLoader: createFlashcardLoader(),
       flashcardStatsLoader: createFlashcardStatsLoader(),
+      logger,
     }),
     formatError: (err: GraphQLError): ErrorResponse => {
-      console.error('Apollo server error:', JSON.stringify(err, null, 2));
+      logger.error('Apollo server error', err);
       let error: ErrorResponse;
       if (typeof err.extensions?.exception.errorName !== 'undefined') {
         error = getErrorCode(err.extensions.exception.errorName as ErrorName);
@@ -137,6 +140,7 @@ const main = async () => {
       }
       return error;
     },
+    logger,
     plugins: serverPlugins,
   });
 
@@ -148,7 +152,7 @@ const main = async () => {
   app.use(Sentry.Handlers.errorHandler());
 
   app.listen(+process.env.PORT, () => {
-    console.log('server started on localhost:4000');
+    logger.log('info', 'server started on localhost:4000');
   });
 };
 

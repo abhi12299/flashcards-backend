@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Redis } from 'ioredis';
+import Winston from 'winston';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
 import { createTagLoader } from './utils/createTagLoader';
@@ -13,6 +14,7 @@ export type MyContext = {
   tagLoader: ReturnType<typeof createTagLoader>;
   flashcardLoader: ReturnType<typeof createFlashcardLoader>;
   flashcardStatsLoader: ReturnType<typeof createFlashcardStatsLoader>;
+  logger: Winston.Logger;
 };
 
 export type UserAuthTokenPayload = {

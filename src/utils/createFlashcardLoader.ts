@@ -10,9 +10,5 @@ export const createFlashcardLoader = () =>
     flashcards.forEach((f) => {
       flashcardIdToFlashcard[f.id] = f;
     });
-
-    // console.log("userIds", userIds);
-    // console.log("map", userIdToUser);
-    // console.log("sortedUsers", sortedUsers);
     return fIds.map((fid) => flashcardIdToFlashcard[fid]);
   });

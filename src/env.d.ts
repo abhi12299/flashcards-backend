@@ -7,5 +7,9 @@ declare namespace NodeJS {
     GOOGLE_APPLICATION_CREDENTIALS: string;
     CLIENT_ID: string;
     SENTRY_DSN: string;
+    NODE_ENV: string;
+    APOLLO_KEY: string;
+    APOLLO_GRAPH_VARIANT: string;
+    APOLLO_SCHEMA_REPORTING: string;
   }
 }

@@ -28,7 +28,11 @@ export class UserResolver {
   }
 
   @Mutation(() => UserResponse)
-  async login(@Arg('idToken') idToken: string, @Arg('name') name: string): Promise<UserResponse> {
+  async login(
+    @Arg('idToken') idToken: string,
+    @Arg('name') name: string,
+    @Ctx() { logger }: MyContext,
+  ): Promise<UserResponse> {
     let email: string | undefined;
     let profilePic: string | undefined;
     try {
@@ -40,7 +44,7 @@ export class UserResolver {
       profilePic = decoded.picture;
     } catch (error) {
       Sentry.captureException(error);
-      console.error(error);
+      logger.error(error);
     }
     if (!email) {
       return {
@@ -66,7 +70,7 @@ export class UserResolver {
       }
     } catch (error) {
       Sentry.captureException(error);
-      console.error(error);
+      logger.error(error);
     }
 
     if (!user) {
@@ -85,7 +89,10 @@ export class UserResolver {
 
   @Mutation(() => User, { nullable: true })
   @UseMiddleware(isAuth)
-  async updateUser(@Arg('input') { name }: UpdateUserProfileInput, @Ctx() { req }: MyContext): Promise<User | null> {
+  async updateUser(
+    @Arg('input') { name }: UpdateUserProfileInput,
+    @Ctx() { req, logger }: MyContext,
+  ): Promise<User | null> {
     const { id: userId } = req.user!;
     try {
       const user = await User.findOneOrFail(userId);
@@ -96,7 +103,7 @@ export class UserResolver {
       return user;
     } catch (error) {
       Sentry.captureException(error);
-      console.error(error);
+      logger.error(error);
       return null;
     }
   }

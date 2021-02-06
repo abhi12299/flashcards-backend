@@ -49,6 +49,16 @@ export enum FlashcardVisibility {
   deleted = 'deleted',
 }
 
+export enum ReportTimespan {
+  week = 'week',
+  month = 'month',
+}
+
+export enum ReportGroupBy {
+  difficulty = 'difficulty',
+  answerStatus = 'status',
+}
+
 export class CustomError extends Error {
   static ignoredErrors: ErrorName[] = [ErrorName.UNAUTHORIZED];
 

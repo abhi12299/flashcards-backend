@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import moment from 'moment';
 import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection, In } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
@@ -9,6 +10,8 @@ import { User } from '../entities/User';
 import {
   CreateFlashcardInput,
   CreateFlashcardResponse,
+  FlashcardReportInput,
+  FlashcardReportResponse,
   FlashcardStats,
   ForkFlashcardResponse,
   GetFlashcardsInput,
@@ -19,7 +22,14 @@ import {
   UpdateFlashcardResponse,
 } from '../graphqlTypes';
 import { isAuth } from '../middleware/isAuth';
-import { FlashcardStatus, FlashcardVisibility, MyContext } from '../types';
+import {
+  FlashcardDifficulty,
+  FlashcardStatus,
+  FlashcardVisibility,
+  MyContext,
+  ReportGroupBy,
+  ReportTimespan,
+} from '../types';
 
 @Resolver(Flashcard)
 export class FlashcardResolver {
@@ -170,7 +180,7 @@ export class FlashcardResolver {
   @UseMiddleware(isAuth)
   async createFlashcard(
     @Arg('input') input: CreateFlashcardInput,
-    @Ctx() { req }: MyContext,
+    @Ctx() { req, logger }: MyContext,
   ): Promise<CreateFlashcardResponse> {
     const { tags } = input;
     const { id: userId } = req.user!;
@@ -203,7 +213,7 @@ export class FlashcardResolver {
           flashcard = await tm.save(flashcard);
           return { flashcard };
         } catch (error) {
-          console.error(error);
+          logger.error(error);
           Sentry.captureException(error);
           return { errors: [{ field: 'flashcard', message: 'Cannot save flashcard. Please try again later.' }] };
         }
@@ -214,8 +224,8 @@ export class FlashcardResolver {
   @Mutation(() => UpdateFlashcardResponse)
   @UseMiddleware(isAuth)
   async updateFlashcard(
-    @Arg('input') { title, body, tags, id, isPublic }: UpdateFlashcardInput,
-    @Ctx() { req }: MyContext,
+    @Arg('input') { title, body, difficulty, tags, id, isPublic }: UpdateFlashcardInput,
+    @Ctx() { req, logger }: MyContext,
   ): Promise<UpdateFlashcardResponse> {
     const { id: userId } = req.user!;
     return await getConnection().transaction(
@@ -238,6 +248,9 @@ export class FlashcardResolver {
               };
             }
             flashcard.isPublic = isPublic;
+          }
+          if (difficulty && flashcard.difficulty !== difficulty) {
+            flashcard.difficulty = difficulty;
           }
           if (title && flashcard.title !== title) {
             flashcard.title = title;
@@ -284,7 +297,7 @@ export class FlashcardResolver {
           return { flashcard };
         } catch (error) {
           Sentry.captureException(error);
-          console.error(error);
+          logger.error(error);
           return {
             errors: [
               {
@@ -309,7 +322,7 @@ export class FlashcardResolver {
   @UseMiddleware(isAuth)
   async forkFlashcard(
     @Arg('from', () => Int) fromId: number,
-    @Ctx() { req }: MyContext,
+    @Ctx() { req, logger }: MyContext,
   ): Promise<ForkFlashcardResponse> {
     const { id: userId } = req.user!;
     // check if fromId is public
@@ -356,7 +369,7 @@ export class FlashcardResolver {
           return { done: true };
         } catch (error) {
           Sentry.captureException(error);
-          console.error(error);
+          logger.error(error);
           return {
             done: false,
             errors: [{ field: 'from', message: 'The flashcard cannot be forked. Please try again later.' }],
@@ -370,7 +383,7 @@ export class FlashcardResolver {
   @UseMiddleware(isAuth)
   async respondToFlashcard(
     @Arg('input') { id, type, duration }: RespondToFlashcardInput,
-    @Ctx() { req }: MyContext,
+    @Ctx() { req, logger }: MyContext,
   ): Promise<RespondToFlashcardResponse> {
     const { id: userId } = req.user!;
 
@@ -394,8 +407,69 @@ export class FlashcardResolver {
       return { done: true };
     } catch (error) {
       Sentry.captureException(error);
-      console.error(error);
+      logger.error(error);
       return { done: false };
+    }
+  }
+
+  @Query(() => FlashcardReportResponse)
+  @UseMiddleware(isAuth)
+  async flashcardsReport(
+    @Arg('input') { timespan, groupBy }: FlashcardReportInput,
+    @Ctx() { req, logger }: MyContext,
+  ): Promise<FlashcardReportResponse> {
+    try {
+      let startDate: moment.Moment, endDate: moment.Moment;
+
+      if (timespan === ReportTimespan.month) {
+        startDate = moment().startOf('month');
+        endDate = moment().endOf('month');
+      } else {
+        startDate = moment().startOf('week');
+        endDate = moment().endOf('week');
+      }
+      const { id: userId } = req.user!;
+      const qb = getConnection()
+        .createQueryBuilder()
+        .from(FlashcardHistory, 'fch')
+        .leftJoin('flashcard', 'fc', 'fch."flashcardId" = fc.id')
+        .where('fch."userId" = :userId', { userId })
+        .andWhere('fch."createdAt" > :startDate', { startDate: startDate.format('YYYY-MM-DD HH:mm:ss') })
+        .andWhere('fch."createdAt" < :endDate', { endDate: endDate.format('YYYY-MM-DD HH:mm:ss') });
+      if (groupBy === ReportGroupBy.difficulty) {
+        // group by their difficulty, return count
+        const result = await qb
+          .select(['fc."difficulty" as difficulty', 'count(*) as count'])
+          .groupBy('fc."difficulty"')
+          .execute();
+
+        if (Array.isArray(result) && result.length > 0) {
+          return {
+            byDifficulty: {
+              easy: result.find((r) => (r.difficulty as FlashcardDifficulty) === FlashcardDifficulty.easy)?.count,
+              medium: result.find((r) => (r.difficulty as FlashcardDifficulty) === FlashcardDifficulty.medium)?.count,
+              hard: result.find((r) => (r.difficulty as FlashcardDifficulty) === FlashcardDifficulty.hard)?.count,
+            },
+          };
+        }
+      } else if (groupBy === ReportGroupBy.answerStatus) {
+        const result = await qb.select(['fch.status as status', 'count(*) as count']).groupBy('fch.status').execute();
+        if (Array.isArray(result) && result.length > 0) {
+          return {
+            byStatus: {
+              knowAnswer: result.find((r) => (r.status as FlashcardStatus) === FlashcardStatus.knowAnswer)?.count,
+              dontKnowAnswer: result.find((r) => (r.status as FlashcardStatus) === FlashcardStatus.dontKnowAnswer)
+                ?.count,
+              unattempted: result.find((r) => (r.status as FlashcardStatus) === FlashcardStatus.unattempted)?.count,
+            },
+          };
+        }
+      }
+      return {};
+    } catch (error) {
+      Sentry.captureException(error);
+      logger.error(error);
+      return {};
     }
   }
 }

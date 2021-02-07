@@ -12,6 +12,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { FlashcardDifficulty } from '../types';
+import { Collection } from './Collection';
 import { Tag } from './Tag';
 import { User } from './User';
 
@@ -51,6 +52,11 @@ export class Flashcard extends BaseEntity {
   @ManyToMany(() => Tag)
   @JoinTable()
   tags!: Tag[];
+
+  @Field(() => [Collection])
+  @ManyToMany(() => Collection)
+  @JoinTable()
+  collections!: Collection[];
 
   @Field()
   @Column()

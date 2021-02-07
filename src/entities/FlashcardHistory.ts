@@ -5,6 +5,7 @@ import { FlashcardStatus } from '../types';
 @Entity()
 @ObjectType()
 @Index(['flashcardId', 'userId'])
+@Index(['flashcardId', 'collectionId'])
 export class FlashcardHistory extends BaseEntity {
   @Field()
   @PrimaryGeneratedColumn()
@@ -31,6 +32,11 @@ export class FlashcardHistory extends BaseEntity {
   @Field()
   @Column({ nullable: true, type: 'float' })
   responseDuration?: number;
+
+  @Field()
+  @Column({ nullable: true })
+  @Index()
+  collectionId?: number;
 
   @Field()
   @CreateDateColumn()

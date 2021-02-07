@@ -10,6 +10,7 @@ import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
 import { createConnection } from 'typeorm';
 import { __prod__ } from './constants';
+import { Collection } from './entities/Collection';
 import { Flashcard } from './entities/Flashcard';
 import { FlashcardHistory } from './entities/FlashcardHistory';
 import { Fork } from './entities/Fork';
@@ -38,7 +39,7 @@ const main = async () => {
     logging: true,
     synchronize: !__prod__,
     migrations: [path.join(__dirname, './migrations/*')],
-    entities: [Tag, User, Flashcard, Fork, FlashcardHistory],
+    entities: [Tag, User, Flashcard, Fork, FlashcardHistory, Collection],
   });
   // admin.initializeApp({
   //   credential: admin.credential.applicationDefault(),

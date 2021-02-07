@@ -1,5 +1,6 @@
 import { IsArray, IsString, Length, Min, MinLength } from 'class-validator';
 import { Field, Float, InputType, Int, ObjectType } from 'type-graphql';
+import { Collection } from '../entities/Collection';
 import { Flashcard } from '../entities/Flashcard';
 import { FlashcardHistory } from '../entities/FlashcardHistory';
 import { User } from '../entities/User';
@@ -54,6 +55,34 @@ export class UpdateFlashcardInput {
 }
 
 @InputType()
+export class UpdateCollectionInput {
+  @Field(() => Int)
+  id!: number;
+
+  @Field({ nullable: true })
+  name?: string;
+
+  @Field({ nullable: true })
+  description?: string;
+
+  @Field(() => [String], { nullable: true })
+  @MinLength(1, { each: true })
+  @IsArray({ each: true, message: 'Tags must be an array of strings' })
+  @IsString({ each: true })
+  @Length(1, undefined, { each: true, message: 'Tags must be strings' })
+  tags?: string[];
+
+  @Field(() => [Int])
+  @IsArray({ each: true, message: 'A collection must have at least one flashcard' })
+  @IsString({ each: true })
+  @Length(1, undefined, { each: true, message: 'A collection must have at least one flashcard' })
+  flashcards?: number[];
+
+  @Field({ nullable: true })
+  isPublic?: boolean;
+}
+
+@InputType()
 export class GetFlashcardsInput {
   @Field(() => Int)
   @Min(1)
@@ -64,6 +93,9 @@ export class GetFlashcardsInput {
 
   @Field(() => [String], { nullable: true })
   tags?: string[];
+
+  @Field(() => Int, { nullable: true })
+  user?: number;
 
   @Field(() => FlashcardDifficulty, { nullable: true })
   difficulty?: FlashcardDifficulty;
@@ -107,6 +139,30 @@ export class FlashcardReportInput {
   groupBy!: ReportGroupBy;
 }
 
+@InputType()
+export class CreateCollectionInput {
+  @Field()
+  name!: string;
+
+  @Field({ nullable: true })
+  description?: string;
+
+  @Field(() => [String])
+  @IsArray({ each: true, message: 'Tags must be an array of strings' })
+  @IsString({ each: true })
+  @Length(1, undefined, { each: true, message: 'Tags must be strings' })
+  tags!: string[];
+
+  @Field()
+  isPublic?: boolean;
+
+  @Field(() => [Int])
+  @IsArray({ each: true, message: 'A collection must have at least one flashcard' })
+  @IsString({ each: true })
+  @Length(1, undefined, { each: true, message: 'A collection must have at least one flashcard' })
+  flashcards!: number[];
+}
+
 @ObjectType()
 export class PaginatedFlashcards {
   @Field(() => [Flashcard])
@@ -132,6 +188,15 @@ export class PaginatedFlashcardsHistory {
 export class CreateFlashcardResponse {
   @Field(() => Flashcard, { nullable: true })
   flashcard?: Flashcard;
+
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+}
+
+@ObjectType()
+export class CreateCollectionResponse {
+  @Field(() => Collection, { nullable: true })
+  collection?: Collection;
 
   @Field(() => [FieldError], { nullable: true })
   errors?: FieldError[];
@@ -168,6 +233,15 @@ export class UpdateFlashcardResponse {
 
   @Field(() => Flashcard, { nullable: true })
   flashcard?: Flashcard;
+}
+
+@ObjectType()
+export class UpdateCollectionResponse {
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+
+  @Field(() => Collection, { nullable: true })
+  collection?: Collection;
 }
 
 @ObjectType()

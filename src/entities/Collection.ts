@@ -6,42 +6,48 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
-  OneToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Collection } from './Collection';
 import { Flashcard } from './Flashcard';
 import { Tag } from './Tag';
+import { User } from './User';
 
 @ObjectType()
 @Entity()
-export class User extends BaseEntity {
+export class Collection extends BaseEntity {
   @Field()
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Field()
-  @Column({ nullable: false })
+  @Column()
   name!: string;
 
-  @Field()
-  @Column({ unique: true })
-  email!: string;
-
-  @Field()
+  @Field({ nullable: true })
   @Column({ nullable: true })
-  profilePic?: string;
+  description?: string;
 
-  @OneToMany(() => Flashcard, (card: Flashcard) => card.creator)
-  flashcards: Flashcard[];
+  @ManyToMany(() => Flashcard, (fc: Flashcard) => fc.collections)
+  flashcards!: Flashcard[];
 
-  @OneToMany(() => Collection, (collection: Collection) => collection.creator)
-  collections: Collection[];
+  @Field()
+  @Column()
+  creatorId!: number;
 
+  @Field()
+  @ManyToOne(() => User, (user) => user.collections)
+  creator!: User;
+
+  @Field(() => [Tag])
   @ManyToMany(() => Tag)
   @JoinTable()
   tags!: Tag[];
+
+  @Field()
+  @Column()
+  isPublic!: boolean;
 
   @Field(() => Number)
   @CreateDateColumn()

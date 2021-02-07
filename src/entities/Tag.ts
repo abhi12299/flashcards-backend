@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Collection } from './Collection';
 import { Flashcard } from './Flashcard';
 import { User } from './User';
 
@@ -24,6 +25,9 @@ export class Tag extends BaseEntity {
 
   @ManyToMany(() => Flashcard, (fc: Flashcard) => fc.tags)
   flashcards: Flashcard[];
+
+  @ManyToMany(() => Collection, (c: Collection) => c.tags)
+  collections: Collection[];
 
   @ManyToMany(() => User, (user) => user.tags)
   users: User[];

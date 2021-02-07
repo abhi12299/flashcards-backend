@@ -89,7 +89,9 @@ export class FlashcardResolver {
   }
 
   @Query(() => PaginatedFlashcards)
-  async publicFlashcards(@Arg('input') { limit, cursor, tags }: GetFlashcardsInput): Promise<PaginatedFlashcards> {
+  async publicFlashcards(
+    @Arg('input') { limit, cursor, tags, user }: GetFlashcardsInput,
+  ): Promise<PaginatedFlashcards> {
     const realLimit = Math.min(50, limit);
     const reaLimitPlusOne = realLimit + 1;
 
@@ -105,6 +107,9 @@ export class FlashcardResolver {
       .where('fc."isPublic" = true')
       .andWhere('fc."isFork" = false');
 
+    if (user) {
+      qb.andWhere('fc."creatorId" = :user', { user });
+    }
     if (cursor) {
       qb.andWhere('fc."createdAt" < :cursor', {
         cursor: new Date(parseInt(cursor)),

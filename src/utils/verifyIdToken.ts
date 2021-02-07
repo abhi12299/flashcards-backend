@@ -12,7 +12,6 @@ export const verifyIdToken = async (idToken: string): Promise<TokenPayload | und
     });
     return ticket.getPayload();
   } catch (error) {
-    console.error(error);
     return;
   }
 };

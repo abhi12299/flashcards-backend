@@ -3,7 +3,7 @@ import { Field, Float, InputType, Int, ObjectType } from 'type-graphql';
 import { Flashcard } from '../entities/Flashcard';
 import { FlashcardHistory } from '../entities/FlashcardHistory';
 import { User } from '../entities/User';
-import { FlashcardDifficulty, FlashcardStatus } from '../types';
+import { FlashcardDifficulty, FlashcardStatus, ReportGroupBy, ReportTimespan } from '../types';
 
 @InputType()
 export class CreateFlashcardInput {
@@ -48,6 +48,9 @@ export class UpdateFlashcardInput {
 
   @Field({ nullable: true })
   isPublic?: boolean;
+
+  @Field(() => FlashcardDifficulty, { nullable: true })
+  difficulty?: FlashcardDifficulty;
 }
 
 @InputType()
@@ -93,6 +96,15 @@ export class UpdateUserProfileInput {
   @Field({ nullable: true })
   @Length(2)
   name?: string;
+}
+
+@InputType()
+export class FlashcardReportInput {
+  @Field(() => ReportTimespan)
+  timespan!: ReportTimespan;
+
+  @Field(() => ReportGroupBy)
+  groupBy!: ReportGroupBy;
 }
 
 @ObjectType()
@@ -195,4 +207,37 @@ export class FlashcardStatsResponse {
 
   @Field(() => FlashcardStats, { nullable: true })
   stats?: FlashcardStats;
+}
+
+@ObjectType()
+export class FlashcardReportByDifficulty {
+  @Field({ nullable: true })
+  easy?: number;
+
+  @Field({ nullable: true })
+  medium?: number;
+
+  @Field({ nullable: true })
+  hard?: number;
+}
+
+@ObjectType()
+export class FlashcardReportByStatus {
+  @Field({ nullable: true })
+  knowAnswer?: number;
+
+  @Field({ nullable: true })
+  dontKnowAnswer?: number;
+
+  @Field({ nullable: true })
+  unattempted?: number;
+}
+
+@ObjectType()
+export class FlashcardReportResponse {
+  @Field(() => FlashcardReportByDifficulty, { nullable: true })
+  byDifficulty?: FlashcardReportByDifficulty;
+
+  @Field(() => FlashcardReportByStatus, { nullable: true })
+  byStatus?: FlashcardReportByStatus;
 }

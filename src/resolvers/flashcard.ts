@@ -319,8 +319,13 @@ export class FlashcardResolver {
   @Mutation(() => Boolean)
   @UseMiddleware(isAuth)
   async deleteFlashcard(@Arg('id', () => Int) id: number, @Ctx() { req }: MyContext): Promise<boolean> {
-    await getConnection().getRepository(Flashcard).softDelete({ id, creatorId: req.user!.id });
-    return true;
+    return await getConnection().transaction(
+      async (tm): Promise<boolean> => {
+        await tm.getRepository(Flashcard).softDelete({ id, creatorId: req.user!.id });
+        await tm.getRepository(Fork).delete({ forkedTo: id, forkedBy: req.user!.id });
+        return true;
+      },
+    );
   }
 
   @Mutation(() => ForkFlashcardResponse)

@@ -33,6 +33,8 @@ export class UserResolver {
     @Arg('name') name: string,
     @Ctx() { logger }: MyContext,
   ): Promise<UserResponse> {
+    const errMessage = 'Cannot login! Please try again with a different email.';
+
     let email: string | undefined;
     let profilePic: string | undefined;
     try {
@@ -48,7 +50,7 @@ export class UserResolver {
     }
     if (!email) {
       return {
-        errors: [{ field: 'idToken', message: 'Cannot obtain your email address! Please try again.' }],
+        errors: [{ field: 'idToken', message: errMessage }],
       };
     }
 
@@ -75,7 +77,7 @@ export class UserResolver {
 
     if (!user) {
       return {
-        errors: [{ field: 'email', message: 'Cannot login. Please try again later.' }],
+        errors: [{ field: 'email', message: errMessage }],
       };
     }
     // create jwt

@@ -24,6 +24,7 @@ import { UserResolver } from './resolvers/user';
 import { CustomError, ErrorName, ErrorResponse } from './types';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
+import { createIsForkedLoader } from './utils/createIsForkedLoader';
 import { createLogger } from './utils/createLogger';
 import { createTagLoader } from './utils/createTagLoader';
 import { createUserLoader } from './utils/createUserLoader';
@@ -65,7 +66,7 @@ const main = async () => {
 
   const serverPlugins: PluginDefinition[] = [];
   serverPlugins.push({
-    requestDidStart(_) {
+    requestDidStart() {
       /* Within this returned object, define functions that respond
      to request-specific lifecycle events. */
       return {
@@ -116,6 +117,7 @@ const main = async () => {
   const logger = createLogger();
 
   const apolloServer = new ApolloServer({
+    tracing: true,
     schema: await buildSchema({
       resolvers: [HelloResolver, UserResolver, FlashcardResolver, TagResolver, FlashcardHistoryResolver],
       validate: false,
@@ -128,6 +130,7 @@ const main = async () => {
       tagLoader: createTagLoader(),
       flashcardLoader: createFlashcardLoader(),
       flashcardStatsLoader: createFlashcardStatsLoader(),
+      isForkedLoader: createIsForkedLoader(),
       logger,
     }),
     formatError: (err: GraphQLError): ErrorResponse => {

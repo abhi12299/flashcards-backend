@@ -3,6 +3,7 @@ import { Redis } from 'ioredis';
 import Winston from 'winston';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
+import { createIsForkedLoader } from './utils/createIsForkedLoader';
 import { createTagLoader } from './utils/createTagLoader';
 import { createUserLoader } from './utils/createUserLoader';
 
@@ -14,6 +15,7 @@ export type MyContext = {
   tagLoader: ReturnType<typeof createTagLoader>;
   flashcardLoader: ReturnType<typeof createFlashcardLoader>;
   flashcardStatsLoader: ReturnType<typeof createFlashcardStatsLoader>;
+  isForkedLoader: ReturnType<typeof createIsForkedLoader>;
   logger: Winston.Logger;
 };
 

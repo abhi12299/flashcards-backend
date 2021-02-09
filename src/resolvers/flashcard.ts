@@ -44,6 +44,14 @@ export class FlashcardResolver {
     return FlashcardVisibility.public;
   }
 
+  @FieldResolver(() => Boolean)
+  async isForkedByYou(@Root() flashcard: Flashcard, @Ctx() { req, isForkedLoader }: MyContext): Promise<boolean> {
+    if (!req.user) {
+      return false;
+    }
+    return isForkedLoader.load(`${req.user.id}|${flashcard.id}`);
+  }
+
   @FieldResolver(() => User)
   creator(@Root() flashcard: Flashcard, @Ctx() { userLoader }: MyContext) {
     return userLoader.load(flashcard.creatorId);

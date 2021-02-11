@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/node';
 import jwt from 'jsonwebtoken';
-import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
+import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { getConnection } from 'typeorm';
+import { Flashcard } from '../entities/Flashcard';
 import { User } from '../entities/User';
 import { UpdateUserProfileInput, UserResponse } from '../graphqlTypes';
 import { isAuth } from '../middleware/isAuth';
@@ -16,6 +17,16 @@ export class UserResolver {
       return user.email;
     }
     return '';
+  }
+
+  // TODO: add dataloader for this to avoid n+1 problem
+  @FieldResolver(() => Int)
+  async numFlashcards(@Root() user: User, @Ctx() { req }: MyContext): Promise<number> {
+    const { id } = req.user || {};
+    if (user.id === id) {
+      return await Flashcard.count({ where: { creatorId: user.id } });
+    }
+    return await Flashcard.count({ where: { creatorId: user.id, isPublic: true } });
   }
 
   @Query(() => User, { nullable: true })

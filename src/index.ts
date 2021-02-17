@@ -120,7 +120,7 @@ const main = async () => {
     tracing: true,
     schema: await buildSchema({
       resolvers: [HelloResolver, UserResolver, FlashcardResolver, TagResolver, FlashcardHistoryResolver],
-      validate: false,
+      validate: { always: true },
     }),
     context: ({ req, res }) => ({
       req,

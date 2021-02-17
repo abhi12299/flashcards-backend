@@ -119,7 +119,7 @@ export class FlashcardResolver {
       });
     }
 
-    if (tags) {
+    if (tags && tags.length > 0) {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }
@@ -135,8 +135,8 @@ export class FlashcardResolver {
 
   @Query(() => PaginatedFlashcards)
   @UseMiddleware(isAuth)
-  async myFlashcards(
-    @Arg('input') { limit, cursor, tags }: GetFlashcardsInput,
+  async userFlashcards(
+    @Arg('input') { limit, cursor, tags, creatorId }: GetFlashcardsInput,
     @Ctx() { req }: MyContext,
   ): Promise<PaginatedFlashcards> {
     const { id } = req.user!;
@@ -149,15 +149,22 @@ export class FlashcardResolver {
       replacements.push(new Date(parseInt(cursor)));
     }
 
-    const qb = getConnection().getRepository(Flashcard).createQueryBuilder('fc').where('fc."creatorId" = :id', { id });
-
+    const qb = getConnection().getRepository(Flashcard).createQueryBuilder('fc');
+    if (!creatorId) {
+      qb.where('fc."creatorId" = :id', { id });
+    } else {
+      qb.where('fc."creatorId" = :id', { id: creatorId });
+      if (creatorId !== id) {
+        qb.andWhere('fc."isPublic" = true');
+      }
+    }
     if (cursor) {
       qb.andWhere('fc."createdAt" < :cursor', {
         cursor: new Date(parseInt(cursor)),
       });
     }
 
-    if (tags) {
+    if (tags && tags.length > 0) {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }

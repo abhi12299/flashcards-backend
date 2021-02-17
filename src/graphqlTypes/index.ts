@@ -63,10 +63,16 @@ export class GetFlashcardsInput {
   cursor?: string;
 
   @Field(() => [String], { nullable: true })
+  @IsArray({ each: true, always: true, message: 'Tags must be an array of strings' })
+  @IsString({ each: true, always: true })
+  @Length(1, undefined, { each: true, always: true, message: 'Tags must be strings' })
   tags?: string[];
 
   @Field(() => FlashcardDifficulty, { nullable: true })
   difficulty?: FlashcardDifficulty;
+
+  @Field(() => Int, { nullable: true })
+  creatorId?: number;
 }
 
 @InputType()

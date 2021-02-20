@@ -92,7 +92,7 @@ export class UserResolver {
       };
     }
     // create jwt
-    const accessToken = await jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+    const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
     return {
       // user,
       isNewUser,

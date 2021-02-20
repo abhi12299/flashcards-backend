@@ -94,7 +94,7 @@ export class UserResolver {
     // create jwt
     const accessToken = await jwt.sign({ id: user.id }, process.env.JWT_SECRET);
     return {
-      user,
+      // user,
       isNewUser,
       accessToken,
     };

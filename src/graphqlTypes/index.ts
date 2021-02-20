@@ -2,7 +2,6 @@ import { IsArray, IsString, Length, Min, MinLength } from 'class-validator';
 import { Field, Float, InputType, Int, ObjectType } from 'type-graphql';
 import { Flashcard } from '../entities/Flashcard';
 import { FlashcardHistory } from '../entities/FlashcardHistory';
-import { User } from '../entities/User';
 import { FlashcardDifficulty, FlashcardStatus, ReportGroupBy, ReportTimespan } from '../types';
 
 @InputType()
@@ -157,8 +156,8 @@ export class UserResponse {
   @Field(() => [FieldError], { nullable: true })
   errors?: FieldError[];
 
-  @Field(() => User, { nullable: true })
-  user?: User;
+  // @Field(() => User, { nullable: true })
+  // user?: User;
 
   @Field(() => Boolean, { nullable: true })
   isNewUser?: boolean;

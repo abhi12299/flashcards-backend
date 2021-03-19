@@ -15,7 +15,7 @@ export class CreateFlashcardInput {
   body!: string;
 
   @Field(() => [String])
-  @IsArray({ each: true, message: 'Tags must be an array of strings' })
+  @IsArray({ message: 'Tags must be an array of strings' })
   @IsString({ each: true })
   @Length(1, undefined, { each: true, message: 'Tags must be strings' })
   tags!: string[];
@@ -40,7 +40,7 @@ export class UpdateFlashcardInput {
 
   @Field(() => [String], { nullable: true })
   @MinLength(1, { each: true })
-  @IsArray({ each: true, message: 'Tags must be an array of strings' })
+  @IsArray({ message: 'Tags must be an array of strings' })
   @IsString({ each: true })
   @Length(1, undefined, { each: true, message: 'Tags must be strings' })
   tags?: string[];
@@ -62,7 +62,7 @@ export class GetFlashcardsInput {
   cursor?: string;
 
   @Field(() => [String], { nullable: true })
-  @IsArray({ each: true, always: true, message: 'Tags must be an array of strings' })
+  @IsArray({ always: true, message: 'Tags must be an array of strings' })
   @IsString({ each: true, always: true })
   @Length(1, undefined, { each: true, always: true, message: 'Tags must be strings' })
   tags?: string[];

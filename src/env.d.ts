@@ -11,5 +11,6 @@ declare namespace NodeJS {
     APOLLO_KEY: string;
     APOLLO_GRAPH_VARIANT: string;
     APOLLO_SCHEMA_REPORTING: string;
+    CORS_ORIGIN: string;
   }
 }

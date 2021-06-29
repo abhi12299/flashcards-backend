@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 import { PluginDefinition } from 'apollo-server-core';
 import { ApolloError, ApolloServer } from 'apollo-server-express';
+import cors from 'cors';
 import 'dotenv-safe/config';
 import express from 'express';
 import { GraphQLError } from 'graphql';
@@ -58,6 +59,11 @@ const main = async () => {
   });
   app.use(Sentry.Handlers.requestHandler());
 
+  app.use(
+    cors({
+      origin: process.env.CORS_ORIGIN.split(','),
+    }),
+  );
   app.use(jwtMiddleware);
   app.get('/', (_, res) => res.redirect('/graphql'));
 

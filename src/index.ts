@@ -10,6 +10,7 @@ import path from 'path';
 import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
 import { createConnection } from 'typeorm';
+import './config/firebase';
 import { __prod__ } from './constants';
 import { Flashcard } from './entities/Flashcard';
 import { FlashcardHistory } from './entities/FlashcardHistory';

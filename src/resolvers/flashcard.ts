@@ -97,11 +97,15 @@ export class FlashcardResolver {
   }
 
   @Query(() => PaginatedFlashcards)
-  async publicFlashcards(@Arg('input') { limit, cursor, tags }: GetFlashcardsInput): Promise<PaginatedFlashcards> {
+  @UseMiddleware(isAuth)
+  async flashcardsFeed(
+    @Arg('input') { limit, cursor, tags }: GetFlashcardsInput,
+    @Ctx() { req }: MyContext,
+  ): Promise<PaginatedFlashcards> {
     const realLimit = Math.min(50, limit);
-    const reaLimitPlusOne = realLimit + 1;
+    const realLimitPlusOne = realLimit + 1;
 
-    const replacements: unknown[] = [reaLimitPlusOne];
+    const replacements: unknown[] = [realLimitPlusOne];
 
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)));
@@ -110,7 +114,10 @@ export class FlashcardResolver {
     const qb = getConnection()
       .getRepository(Flashcard)
       .createQueryBuilder('fc')
-      .where('fc."isPublic" = true')
+      .where('fc."creatorId" = :id', {
+        id: req.user!.id,
+      })
+      .orWhere('fc."isPublic" = true')
       .andWhere('fc."isFork" = false');
 
     if (cursor) {
@@ -124,11 +131,11 @@ export class FlashcardResolver {
       qb.andWhere('t.name in (:...tags)', { tags });
     }
     const count = await qb.clone().select('count(*) as "totalCount"').execute();
-    const flashcards = await qb.orderBy('fc.createdAt', 'DESC').take(reaLimitPlusOne).getMany();
+    const flashcards = await qb.orderBy('fc.createdAt', 'DESC').take(realLimitPlusOne).getMany();
 
     return {
       flashcards: flashcards.slice(0, realLimit),
-      hasMore: flashcards.length === reaLimitPlusOne,
+      hasMore: flashcards.length === realLimitPlusOne,
       total: count[0]?.totalCount,
     };
   }
@@ -198,6 +205,10 @@ export class FlashcardResolver {
     @Ctx() { req, logger }: MyContext,
   ): Promise<CreateFlashcardResponse> {
     const { tags } = input;
+    // convert all tags to lower case
+    for (let i = 0; i < tags.length; i++) {
+      tags[i] = tags[i].toLowerCase();
+    }
     const { id: userId } = req.user!;
     return await getConnection().transaction(
       async (tm): Promise<CreateFlashcardResponse> => {

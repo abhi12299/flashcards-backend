@@ -93,6 +93,7 @@ export class RespondToFlashcardInput {
   type!: FlashcardStatus;
 
   @Field({ nullable: true })
+  @Min(0)
   duration?: number;
 }
 

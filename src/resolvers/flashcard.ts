@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/node';
 import moment from 'moment';
 import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
-import { getConnection, In } from 'typeorm';
+import { Brackets, getConnection, In } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
 import { FlashcardHistory } from '../entities/FlashcardHistory';
 import { Fork } from '../entities/Fork';
@@ -114,10 +114,14 @@ export class FlashcardResolver {
     const qb = getConnection()
       .getRepository(Flashcard)
       .createQueryBuilder('fc')
-      .where('fc."creatorId" = :id', {
-        id: req.user!.id,
-      })
-      .orWhere('fc."isPublic" = true')
+      .where(
+        new Brackets((bracket) => {
+          bracket.andWhere('fc."creatorId" = :id', {
+            id: req.user!.id,
+          });
+          bracket.orWhere('fc."isPublic" = true');
+        }),
+      )
       .andWhere('fc."isFork" = false');
 
     if (cursor) {

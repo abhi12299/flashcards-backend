@@ -18,9 +18,13 @@ import { User } from './User';
 @ObjectType()
 @Entity()
 export class Flashcard extends BaseEntity {
-  @Field()
+  // @Field()
   @PrimaryGeneratedColumn()
   id!: number;
+
+  @Field()
+  @Column({ unique: true })
+  randId!: string;
 
   @Field()
   @Column()
@@ -52,7 +56,7 @@ export class Flashcard extends BaseEntity {
   @JoinTable()
   tags!: Tag[];
 
-  @Field()
+  // @Field()
   @Column()
   creatorId: number;
 

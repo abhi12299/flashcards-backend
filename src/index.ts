@@ -17,6 +17,7 @@ import { FlashcardHistory } from './entities/FlashcardHistory';
 import { Fork } from './entities/Fork';
 import { Tag } from './entities/Tag';
 import { User } from './entities/User';
+import { Username } from './entities/Username';
 import { jwtMiddleware } from './middleware/jwtMiddleware';
 import { FlashcardResolver } from './resolvers/flashcard';
 import { FlashcardHistoryResolver } from './resolvers/flashcardHistory';
@@ -41,7 +42,7 @@ const main = async () => {
     logging: true,
     synchronize: !__prod__,
     migrations: [path.join(__dirname, './migrations/*')],
-    entities: [Tag, User, Flashcard, Fork, FlashcardHistory],
+    entities: [Tag, User, Flashcard, Fork, FlashcardHistory, Username],
   });
   // admin.initializeApp({
   //   credential: admin.credential.applicationDefault(),

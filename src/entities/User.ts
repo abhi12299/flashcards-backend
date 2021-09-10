@@ -16,7 +16,7 @@ import { Tag } from './Tag';
 @ObjectType()
 @Entity()
 export class User extends BaseEntity {
-  @Field()
+  // @Field()
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -27,6 +27,10 @@ export class User extends BaseEntity {
   @Field()
   @Column({ unique: true })
   email!: string;
+
+  @Field()
+  @Column({ unique: true })
+  username!: string;
 
   @Field()
   @Column({ nullable: true })

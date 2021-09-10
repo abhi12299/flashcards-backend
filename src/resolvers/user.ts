@@ -4,6 +4,7 @@ import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddl
 import { getConnection } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
 import { User } from '../entities/User';
+import { Username } from '../entities/Username';
 import { UpdateUserProfileInput, UserResponse } from '../graphqlTypes';
 import { isAuth } from '../middleware/isAuth';
 import { MyContext } from '../types';
@@ -71,12 +72,31 @@ export class UserResolver {
       user = await User.findOne({ where: { email } });
       isNewUser = !user;
       if (isNewUser) {
-        // create one
+        // create username and check availability
+        let username = name.toLowerCase().replace(/[^\w]/gi, '');
+        const existingUname = await getConnection().getRepository(Username).findOne({
+          where: {
+            username,
+          },
+        });
+        if (existingUname) {
+          existingUname.count++;
+          const { count } = await existingUname.save();
+          username = `username${count}`;
+        } else {
+          await getConnection()
+            .getRepository(Username)
+            .create({
+              count: 1,
+              username,
+            })
+            .save();
+        }
         const result = await getConnection()
           .createQueryBuilder()
           .insert()
           .into(User)
-          .values({ email, profilePic, name })
+          .values({ email, profilePic, name, username })
           .returning('*')
           .execute();
         user = result.raw[0];

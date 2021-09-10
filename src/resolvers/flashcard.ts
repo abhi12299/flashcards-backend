@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/node';
 import moment from 'moment';
-import { Arg, Ctx, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
+import { nanoid } from 'nanoid';
+import { Arg, Ctx, FieldResolver, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql';
 import { Brackets, getConnection, In } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
 import { FlashcardHistory } from '../entities/FlashcardHistory';
@@ -190,8 +191,13 @@ export class FlashcardResolver {
 
   @Query(() => Flashcard, { nullable: true })
   @UseMiddleware(isAuth)
-  async flashcard(@Arg('id', () => Int) id: number, @Ctx() { req }: MyContext): Promise<Flashcard | undefined> {
-    const flashcard = await Flashcard.findOne({ where: { id }, relations: ['tags'] });
+  async flashcard(
+    @Arg('randId', () => String) randId: string,
+    @Ctx() { req }: MyContext,
+  ): Promise<Flashcard | undefined> {
+    const flashcard = await getConnection()
+      .getRepository(Flashcard)
+      .findOne({ where: { randId }, relations: ['tags'] });
     if (!flashcard || flashcard.isPublic) {
       return flashcard;
     }
@@ -234,12 +240,13 @@ export class FlashcardResolver {
           user.tags.push(...tagObjs);
           await tm.save(user);
 
+          const randId = nanoid();
           let flashcard = Flashcard.create({
             ...input,
             tags: tagObjs,
-            creatorId: userId,
           });
-
+          flashcard.creatorId = user.id;
+          flashcard.randId = randId;
           flashcard = await tm.save(flashcard);
           return { flashcard };
         } catch (error) {
@@ -254,7 +261,7 @@ export class FlashcardResolver {
   @Mutation(() => UpdateFlashcardResponse)
   @UseMiddleware(isAuth)
   async updateFlashcard(
-    @Arg('input') { title, body, difficulty, tags, id, isPublic }: UpdateFlashcardInput,
+    @Arg('input') { title, body, difficulty, tags, randId, isPublic }: UpdateFlashcardInput,
     @Ctx() { req, logger }: MyContext,
   ): Promise<UpdateFlashcardResponse> {
     const { id: userId } = req.user!;
@@ -262,7 +269,7 @@ export class FlashcardResolver {
       async (tm): Promise<UpdateFlashcardResponse> => {
         try {
           const flashcard = await tm.getRepository(Flashcard).findOneOrFail({
-            where: { id, creatorId: userId },
+            where: { randId, creatorId: userId },
             relations: ['tags'],
           });
 
@@ -343,11 +350,13 @@ export class FlashcardResolver {
 
   @Mutation(() => Boolean)
   @UseMiddleware(isAuth)
-  async deleteFlashcard(@Arg('id', () => Int) id: number, @Ctx() { req }: MyContext): Promise<boolean> {
+  async deleteFlashcard(@Arg('randId', () => String) randId: string, @Ctx() { req }: MyContext): Promise<boolean> {
     return await getConnection().transaction(
       async (tm): Promise<boolean> => {
-        await tm.getRepository(Flashcard).softDelete({ id, creatorId: req.user!.id });
-        await tm.getRepository(Fork).delete({ forkedTo: id, forkedBy: req.user!.id });
+        const flashcard = await tm.getRepository(Flashcard).findOne({ randId });
+        if (!flashcard) return true;
+        await tm.getRepository(Flashcard).softDelete({ randId, creatorId: req.user!.id });
+        await tm.getRepository(Fork).delete({ forkedTo: flashcard.id, forkedBy: req.user!.id });
         return true;
       },
     );
@@ -356,12 +365,14 @@ export class FlashcardResolver {
   @Mutation(() => ForkFlashcardResponse)
   @UseMiddleware(isAuth)
   async forkFlashcard(
-    @Arg('from', () => Int) fromId: number,
+    @Arg('from', () => String) fromRandId: string,
     @Ctx() { req, logger }: MyContext,
   ): Promise<ForkFlashcardResponse> {
     const { id: userId } = req.user!;
     // check if fromId is public
-    const source = await Flashcard.findOne(fromId, { relations: ['tags'] });
+    const source = await getConnection()
+      .getRepository(Flashcard)
+      .findOne({ randId: fromRandId }, { relations: ['tags'] });
     if (!source || !source.isPublic) {
       return {
         done: false,
@@ -374,7 +385,7 @@ export class FlashcardResolver {
         errors: [{ field: 'from', message: 'You cannot fork your own flashcard!' }],
       };
     }
-    const existingFork = await Fork.findOne({ where: { forkedFrom: fromId, forkedBy: userId } });
+    const existingFork = await Fork.findOne({ where: { forkedFrom: source.id, forkedBy: userId } });
     if (existingFork) {
       return {
         done: false,
@@ -417,12 +428,12 @@ export class FlashcardResolver {
   @Mutation(() => RespondToFlashcardResponse)
   @UseMiddleware(isAuth)
   async respondToFlashcard(
-    @Arg('input') { id, type, duration }: RespondToFlashcardInput,
+    @Arg('input') { randId, type, duration }: RespondToFlashcardInput,
     @Ctx() { req, logger }: MyContext,
   ): Promise<RespondToFlashcardResponse> {
     const { id: userId } = req.user!;
 
-    const flashcard = await Flashcard.findOne(id);
+    const flashcard = await getConnection().getRepository(Flashcard).findOne({ randId });
     if (!flashcard || (flashcard.creatorId !== userId && !flashcard.isPublic)) {
       return {
         done: false,
@@ -430,7 +441,7 @@ export class FlashcardResolver {
       };
     }
     const fcHistory = new FlashcardHistory();
-    fcHistory.flashcardId = id;
+    fcHistory.flashcardId = flashcard.id;
     fcHistory.status = type;
     fcHistory.userId = userId;
     if ([FlashcardStatus.knowAnswer, FlashcardStatus.dontKnowAnswer].includes(type)) {

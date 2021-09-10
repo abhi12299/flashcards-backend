@@ -29,8 +29,8 @@ export class CreateFlashcardInput {
 
 @InputType()
 export class UpdateFlashcardInput {
-  @Field(() => Int)
-  id!: number;
+  @Field(() => String)
+  randId!: string;
 
   @Field({ nullable: true })
   title?: string;
@@ -86,8 +86,8 @@ export class GetFlashcardsHistoryInput {
 
 @InputType()
 export class RespondToFlashcardInput {
-  @Field(() => Int)
-  id!: number;
+  @Field(() => String)
+  randId!: string;
 
   @Field(() => FlashcardStatus)
   type!: FlashcardStatus;

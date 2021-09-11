@@ -247,3 +247,10 @@ export class FlashcardReportResponse {
   @Field(() => FlashcardReportByStatus, { nullable: true })
   byStatus?: FlashcardReportByStatus;
 }
+
+@InputType()
+export class SearchTagsInput {
+  @Field()
+  @MinLength(1)
+  term!: string;
+}

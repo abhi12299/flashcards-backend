@@ -181,8 +181,8 @@ export class ForkFlashcardResponse {
   @Field(() => [FieldError], { nullable: true })
   errors?: FieldError[];
 
-  @Field()
-  done!: boolean;
+  @Field({ nullable: true })
+  forkedId?: string;
 }
 
 @ObjectType()

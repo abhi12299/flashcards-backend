@@ -375,26 +375,24 @@ export class FlashcardResolver {
       .findOne({ randId: fromRandId }, { relations: ['tags'] });
     if (!source || !source.isPublic) {
       return {
-        done: false,
         errors: [{ field: 'from', message: 'That flashcard cannot be forked.' }],
       };
     }
     if (source.creatorId === userId) {
       return {
-        done: false,
         errors: [{ field: 'from', message: 'You cannot fork your own flashcard!' }],
       };
     }
     const existingFork = await Fork.findOne({ where: { forkedFrom: source.id, forkedBy: userId } });
     if (existingFork) {
       return {
-        done: false,
         errors: [{ field: 'from', message: 'You have already forked this flashcard.' }],
       };
     }
     return await getConnection().transaction(
       async (tm): Promise<ForkFlashcardResponse> => {
         try {
+          const randId = nanoid();
           const target = new Flashcard();
           target.body = source.body;
           target.creatorId = userId;
@@ -403,6 +401,7 @@ export class FlashcardResolver {
           target.isPublic = false;
           target.isFork = true;
           target.tags = source.tags;
+          target.randId = randId;
           const savedTarget = await tm.save(target);
 
           const fork = new Fork();
@@ -412,12 +411,11 @@ export class FlashcardResolver {
           const user = await tm.getRepository(User).findOneOrFail(userId, { relations: ['tags'] });
           user.tags.push(...source.tags);
           await Promise.all([tm.save(user), tm.save(fork)]);
-          return { done: true };
+          return { forkedId: randId };
         } catch (error) {
           Sentry.captureException(error);
           logger.error(error);
           return {
-            done: false,
             errors: [{ field: 'from', message: 'The flashcard cannot be forked. Please try again later.' }],
           };
         }

@@ -82,7 +82,7 @@ export class UserResolver {
         if (existingUname) {
           existingUname.count++;
           const { count } = await existingUname.save();
-          username = `username${count}`;
+          username = `${username}${count}`;
         } else {
           await getConnection()
             .getRepository(Username)

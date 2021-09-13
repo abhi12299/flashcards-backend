@@ -109,7 +109,7 @@ export class FlashcardResolver {
     const replacements: unknown[] = [realLimitPlusOne];
 
     if (cursor) {
-      replacements.push(new Date(parseInt(cursor)));
+      replacements.push(new Date(cursor));
     }
 
     const qb = getConnection()
@@ -125,17 +125,17 @@ export class FlashcardResolver {
       )
       .andWhere('fc."isFork" = false');
 
-    if (cursor) {
-      qb.andWhere('fc."createdAt" < :cursor', {
-        cursor: new Date(parseInt(cursor)),
-      });
-    }
-
     if (tags && tags.length > 0) {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }
     const count = await qb.clone().select('count(*) as "totalCount"').execute();
+
+    if (cursor) {
+      qb.andWhere('fc."createdAt" < :cursor', {
+        cursor: new Date(cursor),
+      });
+    }
     const flashcards = await qb.orderBy('fc.createdAt', 'DESC').take(realLimitPlusOne).getMany();
 
     return {
@@ -158,7 +158,7 @@ export class FlashcardResolver {
     const replacements: unknown[] = [id, realLimitPlusOne];
 
     if (cursor) {
-      replacements.push(new Date(parseInt(cursor)));
+      replacements.push(new Date(cursor));
     }
 
     const qb = getConnection().getRepository(Flashcard).createQueryBuilder('fc');
@@ -170,17 +170,18 @@ export class FlashcardResolver {
         qb.andWhere('fc."isPublic" = true');
       }
     }
-    if (cursor) {
-      qb.andWhere('fc."createdAt" < :cursor', {
-        cursor: new Date(parseInt(cursor)),
-      });
-    }
-
     if (tags && tags.length > 0) {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }
     const count = await qb.clone().select('count(*) as "totalCount"').execute();
+
+    if (cursor) {
+      qb.andWhere('fc."createdAt" < :cursor', {
+        cursor: new Date(cursor),
+      });
+    }
+
     const flashcards = await qb.orderBy('fc.createdAt', 'DESC').take(realLimitPlusOne).getMany();
     return {
       flashcards: flashcards.slice(0, realLimit),

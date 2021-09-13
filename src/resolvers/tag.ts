@@ -41,7 +41,6 @@ export class TagResolver {
       return [];
     }
 
-    console.log(term);
     return await getConnection()
       .createQueryBuilder(Tag, 't')
       .where('name like :term', {

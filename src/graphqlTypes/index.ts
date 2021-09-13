@@ -59,7 +59,7 @@ export class GetFlashcardsInput {
   limit!: number;
 
   @Field({ nullable: true })
-  cursor?: string;
+  cursor?: number;
 
   @Field(() => [String], { nullable: true })
   @IsArray({ always: true, message: 'Tags must be an array of strings' })

@@ -148,7 +148,7 @@ export class FlashcardResolver {
   @Query(() => PaginatedFlashcards)
   @UseMiddleware(isAuth)
   async userFlashcards(
-    @Arg('input') { limit, cursor, tags, creatorId }: GetFlashcardsInput,
+    @Arg('input') { limit, cursor, tags, username }: GetFlashcardsInput,
     @Ctx() { req }: MyContext,
   ): Promise<PaginatedFlashcards> {
     const { id } = req.user!;
@@ -161,12 +161,13 @@ export class FlashcardResolver {
       replacements.push(new Date(cursor));
     }
 
+    const user = await User.findOneOrFail({ where: { username } });
     const qb = getConnection().getRepository(Flashcard).createQueryBuilder('fc');
-    if (!creatorId) {
+    if (!username) {
       qb.where('fc."creatorId" = :id', { id });
     } else {
-      qb.where('fc."creatorId" = :id', { id: creatorId });
-      if (creatorId !== id) {
+      qb.where('fc."creatorId" = :id', { id: user.id });
+      if (user.id !== id) {
         qb.andWhere('fc."isPublic" = true');
       }
     }

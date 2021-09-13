@@ -5,7 +5,7 @@ import { getConnection } from 'typeorm';
 import { Flashcard } from '../entities/Flashcard';
 import { User } from '../entities/User';
 import { Username } from '../entities/Username';
-import { UpdateUserProfileInput, UserResponse } from '../graphqlTypes';
+import { UpdateUserProfileInput, UserProfileInput, UserResponse } from '../graphqlTypes';
 import { isAuth } from '../middleware/isAuth';
 import { MyContext } from '../types';
 import { verifyIdToken } from '../utils/verifyIdToken';
@@ -31,12 +31,18 @@ export class UserResolver {
   }
 
   @Query(() => User, { nullable: true })
-  me(@Ctx() { req }: MyContext) {
-    if (!req.user) {
+  user(@Arg('input') { username }: UserProfileInput, @Ctx() { req }: MyContext) {
+    if (!req.user && !username) {
       return null;
     }
 
-    return User.findOne(req.user.id);
+    if (username) {
+      return User.findOne({ where: { username } });
+    }
+    if (req.user?.id) {
+      return User.findOne(req.user?.id);
+    }
+    return null;
   }
 
   @Mutation(() => UserResponse)

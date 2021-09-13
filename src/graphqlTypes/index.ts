@@ -70,8 +70,8 @@ export class GetFlashcardsInput {
   @Field(() => FlashcardDifficulty, { nullable: true })
   difficulty?: FlashcardDifficulty;
 
-  @Field(() => Int, { nullable: true })
-  creatorId?: number;
+  @Field(() => String, { nullable: true })
+  username?: string;
 }
 
 @InputType()
@@ -95,6 +95,12 @@ export class RespondToFlashcardInput {
   @Field({ nullable: true })
   @Min(0)
   duration?: number;
+}
+
+@InputType()
+export class UserProfileInput {
+  @Field({ nullable: true })
+  username: string;
 }
 
 @InputType()

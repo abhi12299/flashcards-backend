@@ -100,7 +100,7 @@ export class FlashcardResolver {
   @Query(() => PaginatedFlashcards)
   @UseMiddleware(isAuth)
   async flashcardsFeed(
-    @Arg('input') { limit, cursor, tags }: GetFlashcardsInput,
+    @Arg('input') { limit, cursor, tags, difficulty }: GetFlashcardsInput,
     @Ctx() { req }: MyContext,
   ): Promise<PaginatedFlashcards> {
     const realLimit = Math.min(50, limit);
@@ -125,6 +125,9 @@ export class FlashcardResolver {
       )
       .andWhere('fc."isFork" = false');
 
+    if (difficulty) {
+      qb.andWhere('fc.difficulty = :difficulty', { difficulty });
+    }
     if (tags && tags.length > 0) {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
@@ -148,7 +151,7 @@ export class FlashcardResolver {
   @Query(() => PaginatedFlashcards)
   @UseMiddleware(isAuth)
   async userFlashcards(
-    @Arg('input') { limit, cursor, tags, username }: GetFlashcardsInput,
+    @Arg('input') { limit, cursor, tags, username, difficulty }: GetFlashcardsInput,
     @Ctx() { req }: MyContext,
   ): Promise<PaginatedFlashcards> {
     const { id } = req.user!;
@@ -170,6 +173,9 @@ export class FlashcardResolver {
       if (user.id !== id) {
         qb.andWhere('fc."isPublic" = true');
       }
+    }
+    if (difficulty) {
+      qb.andWhere('fc.difficulty = :difficulty', { difficulty });
     }
     if (tags && tags.length > 0) {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');

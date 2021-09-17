@@ -524,4 +524,6 @@ export class FlashcardResolver {
       return {};
     }
   }
+  // TODO: add search using title (and body?)
+  // refer: https://stackoverflow.com/questions/59849262/postgresql-full-text-search-with-typeorm/64450994#64450994
 }

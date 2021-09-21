@@ -127,8 +127,8 @@ export class PaginatedFlashcards {
   @Field()
   hasMore: boolean;
 
-  @Field(() => Int)
-  total: number;
+  // @Field(() => Int)
+  // total: number;
 }
 
 @ObjectType()

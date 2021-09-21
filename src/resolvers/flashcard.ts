@@ -132,7 +132,7 @@ export class FlashcardResolver {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }
-    const count = await qb.clone().select('count(*) as "totalCount"').execute();
+    // const count = await qb.clone().select('count(*) as "totalCount"').execute();
 
     if (cursor) {
       qb.andWhere('fc."createdAt" < :cursor', {
@@ -144,7 +144,7 @@ export class FlashcardResolver {
     return {
       flashcards: flashcards.slice(0, realLimit),
       hasMore: flashcards.length === realLimitPlusOne,
-      total: count[0]?.totalCount,
+      // total: count[0]?.totalCount,
     };
   }
 
@@ -181,7 +181,7 @@ export class FlashcardResolver {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
     }
-    const count = await qb.clone().select('count(*) as "totalCount"').execute();
+    // const count = await qb.clone().select('count(*) as "totalCount"').execute();
 
     if (cursor) {
       qb.andWhere('fc."createdAt" < :cursor', {
@@ -193,7 +193,7 @@ export class FlashcardResolver {
     return {
       flashcards: flashcards.slice(0, realLimit),
       hasMore: flashcards.length === realLimitPlusOne,
-      total: count[0]?.totalCount,
+      // total: count[0]?.totalCount,
     };
   }
 

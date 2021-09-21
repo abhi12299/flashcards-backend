@@ -18,7 +18,7 @@ export class TagResolver {
       .from(User, 'user')
       .where('user.id = :userId', { userId })
       .leftJoin('user.tags', 'tag')
-      .take(10)
+      .limit(10)
       .execute();
 
     return tags;

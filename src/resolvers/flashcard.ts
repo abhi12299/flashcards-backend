@@ -100,7 +100,7 @@ export class FlashcardResolver {
   @Query(() => PaginatedFlashcards)
   @UseMiddleware(isAuth)
   async flashcardsFeed(
-    @Arg('input') { limit, cursor, tags, difficulty }: GetFlashcardsInput,
+    @Arg('input') { limit, cursor, tags, difficulty, searchTerm }: GetFlashcardsInput,
     @Ctx() { req }: MyContext,
   ): Promise<PaginatedFlashcards> {
     const realLimit = Math.min(50, limit);
@@ -131,6 +131,13 @@ export class FlashcardResolver {
     if (tags && tags.length > 0) {
       qb.leftJoin('flashcard_tags_tag', 'ftt', 'fc.id = ftt."flashcardId"').leftJoin('tag', 't', 't.id = ftt."tagId"');
       qb.andWhere('t.name in (:...tags)', { tags });
+    }
+    if (searchTerm) {
+      let query = searchTerm.trim().replace(/['";\-\(\)\{\}]/gi, '');
+      query = query.replace(/ /g, ' & ');
+      // qb.andWhere(`to_tsvector(title) @@ to_tsquery(:query)`, { query });
+      // ref: https://stackoverflow.com/questions/59849262/postgresql-full-text-search-with-typeorm/64450994#64450994
+      qb.andWhere(`to_tsvector('simple',title) @@ to_tsquery('simple', :query)`, { query });
     }
     // const count = await qb.clone().select('count(*) as "totalCount"').execute();
 
@@ -524,6 +531,4 @@ export class FlashcardResolver {
       return {};
     }
   }
-  // TODO: add search using title (and body?)
-  // refer: https://stackoverflow.com/questions/59849262/postgresql-full-text-search-with-typeorm/64450994#64450994
 }

@@ -72,6 +72,9 @@ export class GetFlashcardsInput {
 
   @Field(() => String, { nullable: true })
   username?: string;
+
+  @Field(() => String, { nullable: true })
+  searchTerm?: string;
 }
 
 @InputType()

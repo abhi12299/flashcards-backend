@@ -35,8 +35,7 @@ import { getErrorCode } from './utils/getErrorCode';
 import './utils/registerEnums';
 
 const main = async () => {
-  // const conn =
-  await createConnection({
+  const conn = await createConnection({
     type: 'postgres',
     url: process.env.DATABASE_URL,
     logging: true,
@@ -47,7 +46,8 @@ const main = async () => {
   // admin.initializeApp({
   //   credential: admin.credential.applicationDefault(),
   // });
-  // await conn.runMigrations();
+  await conn.runMigrations();
+  // await conn.undoLastMigration();
 
   const app = express();
   Sentry.init({

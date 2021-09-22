@@ -17,7 +17,7 @@ export class CreateFlashcardInput {
   @Field(() => [String])
   @IsArray({ message: 'Tags must be an array of strings' })
   @IsString({ each: true })
-  @Length(1, undefined, { each: true, message: 'Tags must be strings' })
+  @Length(1, 20, { each: true, message: 'Tags must be strings' })
   tags!: string[];
 
   @Field(() => FlashcardDifficulty)

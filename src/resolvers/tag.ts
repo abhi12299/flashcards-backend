@@ -43,7 +43,7 @@ export class TagResolver {
 
     return await getConnection()
       .createQueryBuilder(Tag, 't')
-      .where('name like :term', {
+      .where('name ilike :term', {
         term: `%${term}%`,
       })
       .take(10)

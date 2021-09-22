@@ -31,6 +31,7 @@ import {
   ReportGroupBy,
   ReportTimespan,
 } from '../types';
+import { removeSpecialChars } from '../utils/removeSpecailChars';
 
 @Resolver(Flashcard)
 export class FlashcardResolver {
@@ -230,9 +231,12 @@ export class FlashcardResolver {
     @Ctx() { req, logger }: MyContext,
   ): Promise<CreateFlashcardResponse> {
     const { tags } = input;
-    // convert all tags to lower case
+    if (tags.length === 0) {
+      throw new Error('tags must not be empty');
+    }
+    // remove special chars and spaces
     for (let i = 0; i < tags.length; i++) {
-      tags[i] = tags[i].toLowerCase();
+      tags[i] = removeSpecialChars(tags[i].replace(/ /g, ''));
     }
     const { id: userId } = req.user!;
     return await getConnection().transaction(

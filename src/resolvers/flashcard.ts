@@ -230,13 +230,18 @@ export class FlashcardResolver {
     @Arg('input') input: CreateFlashcardInput,
     @Ctx() { req, logger }: MyContext,
   ): Promise<CreateFlashcardResponse> {
-    const { tags } = input;
-    if (tags.length === 0) {
-      throw new Error('tags must not be empty');
-    }
+    let { tags } = input;
     // remove special chars and spaces
-    for (let i = 0; i < tags.length; i++) {
-      tags[i] = removeSpecialChars(tags[i].replace(/ /g, ''));
+    tags = tags.map((t) => removeSpecialChars(t.replace(/ /g, ''))).filter((t) => t.length > 0);
+    if (tags.length === 0) {
+      return {
+        errors: [{ field: 'tags', message: 'Tags must not be empty.' }],
+      };
+    }
+    if (tags.length > 5) {
+      return {
+        errors: [{ field: 'tags', message: 'At most 5 tags are allowed.' }],
+      };
     }
     const { id: userId } = req.user!;
     return await getConnection().transaction(

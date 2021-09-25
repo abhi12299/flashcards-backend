@@ -13,11 +13,10 @@ export class TagResolver {
   async myTopTags(@Ctx() { req }: MyContext): Promise<Tag[]> {
     const { id: userId } = req.user!;
     const tags = await getConnection()
-      .createQueryBuilder()
+      .createQueryBuilder(User, 'u')
       .select('tag.*')
-      .from(User, 'user')
-      .where('user.id = :userId', { userId })
-      .leftJoin('user.tags', 'tag')
+      .where('u.id = :userId', { userId })
+      .innerJoin('u.tags', 'tag')
       .limit(10)
       .execute();
 

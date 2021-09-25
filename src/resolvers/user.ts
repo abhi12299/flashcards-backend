@@ -54,14 +54,14 @@ export class UserResolver {
     const errMessage = 'Cannot login! Please try again with a different email.';
 
     let email: string | undefined;
-    let profilePic: string | undefined;
+    // let profilePic: string | undefined;
     try {
       const decoded = await verifyIdToken(idToken);
       if (!decoded) {
         throw new Error('invalid id token');
       }
       email = decoded.email;
-      profilePic = decoded.picture;
+      // profilePic = decoded.picture;
     } catch (error) {
       Sentry.captureException(error);
       logger.error(error);
@@ -102,7 +102,7 @@ export class UserResolver {
           .createQueryBuilder()
           .insert()
           .into(User)
-          .values({ email, profilePic, name, username })
+          .values({ email, name, username })
           .returning('*')
           .execute();
         user = result.raw[0];

@@ -32,9 +32,9 @@ export class User extends BaseEntity {
   @Column({ unique: true })
   username!: string;
 
-  @Field()
-  @Column({ nullable: true })
-  profilePic?: string;
+  // @Field()
+  // @Column({ nullable: true })
+  // profilePic?: string;
 
   @OneToMany(() => Flashcard, (card: Flashcard) => card.creator)
   flashcards: Flashcard[];

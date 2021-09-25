@@ -232,7 +232,11 @@ export class FlashcardResolver {
   ): Promise<CreateFlashcardResponse> {
     let { tags } = input;
     // remove special chars and spaces
-    tags = tags.map((t) => removeSpecialChars(t.replace(/ /g, ''))).filter((t) => t.length > 0);
+    // convert to lower case
+    tags = tags
+      .map((t) => removeSpecialChars(t.replace(/ /g, '')))
+      .filter((t) => t.length > 0)
+      .map((t) => t.toLowerCase());
     if (tags.length === 0) {
       return {
         errors: [{ field: 'tags', message: 'Tags must not be empty.' }],

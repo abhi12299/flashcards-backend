@@ -116,7 +116,6 @@ const main = async () => {
     context: ({ req, res }) => ({
       req,
       res,
-      // redis,
       userLoader: createUserLoader(),
       tagLoader: createTagLoader(),
       flashcardLoader: createFlashcardLoader(),
@@ -140,7 +139,9 @@ const main = async () => {
 
   apolloServer.applyMiddleware({
     app,
-    cors: false,
+    cors: {
+      origin: process.env.CORS_ORIGIN,
+    },
   });
 
   app.use(Sentry.Handlers.errorHandler());

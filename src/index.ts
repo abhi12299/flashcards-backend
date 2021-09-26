@@ -111,6 +111,7 @@ const main = async () => {
     playground: {
       endpoint: '/graphql',
     },
+    introspection: true,
     tracing: true,
     schema: await buildSchema({
       resolvers: [HelloResolver, UserResolver, FlashcardResolver, TagResolver, FlashcardHistoryResolver],

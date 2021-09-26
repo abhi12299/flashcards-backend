@@ -6,24 +6,17 @@ import cors from 'cors';
 import 'dotenv-safe/config';
 import express from 'express';
 import { GraphQLError } from 'graphql';
-import path from 'path';
 import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
 import { createConnection } from 'typeorm';
 import './config/firebase';
-import { __prod__ } from './constants';
-import { Flashcard } from './entities/Flashcard';
-import { FlashcardHistory } from './entities/FlashcardHistory';
-import { Fork } from './entities/Fork';
-import { Tag } from './entities/Tag';
-import { User } from './entities/User';
-import { Username } from './entities/Username';
 import { jwtMiddleware } from './middleware/jwtMiddleware';
 import { FlashcardResolver } from './resolvers/flashcard';
 import { FlashcardHistoryResolver } from './resolvers/flashcardHistory';
 import { HelloResolver } from './resolvers/hello';
 import { TagResolver } from './resolvers/tag';
 import { UserResolver } from './resolvers/user';
+import config from './typeorm-config';
 import { CustomError, ErrorName, ErrorResponse } from './types';
 import { createFlashcardLoader } from './utils/createFlashcardLoader';
 import { createFlashcardStatsLoader } from './utils/createFlashcardStatsLoader';
@@ -35,17 +28,7 @@ import { getErrorCode } from './utils/getErrorCode';
 import './utils/registerEnums';
 
 const main = async () => {
-  const conn = await createConnection({
-    type: 'postgres',
-    url: process.env.DATABASE_URL,
-    logging: true,
-    synchronize: !__prod__,
-    migrations: [path.join(__dirname, './migrations/*')],
-    entities: [Tag, User, Flashcard, Fork, FlashcardHistory, Username],
-  });
-  // admin.initializeApp({
-  //   credential: admin.credential.applicationDefault(),
-  // });
+  const conn = await createConnection(config);
   await conn.runMigrations();
   // await conn.undoLastMigration();
 

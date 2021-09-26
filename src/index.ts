@@ -6,6 +6,7 @@ import cors from 'cors';
 import 'dotenv-safe/config';
 import express from 'express';
 import { GraphQLError } from 'graphql';
+import depthLimit from 'graphql-depth-limit';
 import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
 import { createConnection } from 'typeorm';
@@ -108,6 +109,7 @@ const main = async () => {
   const logger = createLogger();
 
   const apolloServer = new ApolloServer({
+    validationRules: [depthLimit(3)],
     playground: {
       endpoint: '/graphql',
     },

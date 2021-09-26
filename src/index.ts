@@ -108,6 +108,9 @@ const main = async () => {
   const logger = createLogger();
 
   const apolloServer = new ApolloServer({
+    playground: {
+      endpoint: '/graphql',
+    },
     tracing: true,
     schema: await buildSchema({
       resolvers: [HelloResolver, UserResolver, FlashcardResolver, TagResolver, FlashcardHistoryResolver],
@@ -140,7 +143,7 @@ const main = async () => {
   apolloServer.applyMiddleware({
     app,
     cors: {
-      origin: process.env.CORS_ORIGIN,
+      origin: process.env.CORS_ORIGIN.split(','),
     },
   });
 
